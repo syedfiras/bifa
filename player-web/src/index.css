@@ -1,0 +1,210 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap');
+
+:root {
+  --bifa-yellow: #f4ea26; /* A vibrant neon player yellow */
+  --bifa-yellow-hover: #dfd720;
+  --bifa-black: #0c0c0c;
+  --bifa-gray: #1a1a1a;
+  --bifa-light-gray: #2c2c2c;
+  --text-white: #ffffff;
+  --text-dim: #a1a1aa;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Outfit', sans-serif;
+}
+
+body {
+  background-color: var(--bifa-black);
+  color: var(--text-white);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* Beautiful custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bifa-black);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--bifa-yellow);
+  border-radius: 4px;
+}
+
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.logo-text {
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--bifa-yellow);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+  text-shadow: 0 0 20px rgba(244, 234, 38, 0.4);
+}
+
+.subheading {
+  color: var(--text-dim);
+  font-size: 1.1rem;
+}
+
+.glass-card {
+  background: rgba(26, 26, 26, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(244, 234, 38, 0.2);
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 50px rgba(244, 234, 38, 0.15);
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #dfdfdf;
+  font-size: 0.95rem;
+}
+
+.form-input {
+  width: 100%;
+  padding: 14px 16px;
+  background-color: var(--bifa-light-gray);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--text-white);
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--bifa-yellow);
+  box-shadow: 0 0 0 3px rgba(244, 234, 38, 0.2);
+  background-color: #242424;
+}
+
+.form-input::placeholder {
+  color: #666;
+}
+
+.position-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.position-chip {
+  padding: 8px 16px;
+  background-color: var(--bifa-light-gray);
+  border: 1px solid var(--bifa-light-gray);
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.position-chip:hover {
+  background-color: #383838;
+}
+
+.position-chip.selected {
+  background-color: var(--bifa-yellow);
+  color: var(--bifa-black);
+  border-color: var(--bifa-yellow);
+  box-shadow: 0 0 15px rgba(244, 234, 38, 0.4);
+}
+
+.position-chip.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 16px;
+  background-color: var(--bifa-yellow);
+  color: var(--bifa-black);
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 1px;
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--bifa-yellow-hover);
+  box-shadow: 0 0 30px rgba(244, 234, 38, 0.6);
+}
+
+.btn-primary:disabled {
+  background-color: #555;
+  color: #888;
+  cursor: not-allowed;
+}
+
+.error-text {
+  color: #ff4d4f;
+  font-size: 0.85rem;
+  margin-top: 6px;
+}
+
+.success-container {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.success-icon {
+  width: 80px;
+  height: 80px;
+  background-color: var(--bifa-yellow);
+  color: var(--bifa-black);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  margin: 0 auto 30px;
+  box-shadow: 0 0 30px rgba(244, 234, 38, 0.5);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(244, 234, 38, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(244, 234, 38, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(244, 234, 38, 0); }
+}
