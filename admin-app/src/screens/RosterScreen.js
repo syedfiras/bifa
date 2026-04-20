@@ -50,7 +50,7 @@ export default function RosterScreen({ navigation }) {
                     )}
                     <View style={styles.info}>
                         <Text style={styles.name}>{item.fullName}</Text>
-                        <Text style={styles.details}>{item.positions.join(', ')}</Text>
+                        <Text style={styles.details}>{item.positions.join(', ')} • {item.ageCategory || 'U20'}</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
                             <View style={styles.dot} />
                             <Text style={styles.activeText}>Active Member</Text>

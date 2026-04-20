@@ -4,6 +4,8 @@ const Player = require('../models/Player');
 const { protect } = require('../middleware/auth');
 const sendEmail = require('../utils/email');
 
+const AGE_CATEGORIES = ['U13', 'U15', 'U17', 'U19', 'U20', 'SENIOR'];
+
 const generateAccessPass = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let pass = '';
@@ -15,14 +17,18 @@ const generateAccessPass = () => {
 
 router.post('/register', async (req, res) => {
     try {
-        const { fullName, email, phone, dateOfBirth, positions, profilePhoto } = req.body;
+        const { fullName, email, phone, dateOfBirth, positions, profilePhoto, ageCategory } = req.body;
 
         if (!positions || positions.length === 0 || positions.length > 3) {
             return res.status(400).json({ success: false, message: 'Must select between 1 and 3 positions' });
         }
 
+        if (!ageCategory || !AGE_CATEGORIES.includes(ageCategory)) {
+            return res.status(400).json({ success: false, message: `ageCategory must be one of: ${AGE_CATEGORIES.join(', ')}` });
+        }
+
         const player = await Player.create({
-            fullName, email, phone, dateOfBirth, positions, profilePhoto
+            fullName, email, phone, dateOfBirth, positions, profilePhoto, ageCategory
         });
 
         res.status(201).json({ success: true, data: player });
@@ -33,10 +39,11 @@ router.post('/register', async (req, res) => {
 
 router.get('/', protect, async (req, res) => {
     try {
-        const { position, status } = req.query;
+        const { position, status, ageCategory } = req.query;
         let query = {};
         if (position) query.positions = { $in: [position] };
         if (status) query.status = status;
+        if (ageCategory) query.ageCategory = ageCategory;
         const players = await Player.find(query).sort('-registrationDate');
         res.status(200).json({ success: true, data: players });
     } catch (error) {

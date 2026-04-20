@@ -3,18 +3,25 @@
 A full-stack club management system with a public registration portal, backend API, and mobile admin panel.
 
 ## Folder Structure
-- `/backend`: Node.js, Express, MongoDB (Mongoose)
+- `/backend`: Node.js, Express, Supabase (PostgreSQL)
 - `/player-web`: React.js (Vite) Registration site
 - `/admin-app`: React Native (Expo) Admin Mobile App
 
 ## 1. Backend Setup
-1. CD into the backend `cd backend`
-2. Ensure you have MongoDB running locally.
-3. Update `.env` with your actual email credentials to utilize Nodemailer. Default is localhost MongoDB.
-4. Run the seed script to create your first admin:
-   `node seedAdmin.js`
-   (This creates an admin with username `admin`, password `password123`)
-5. Start the backend: `npx nodemon`
+1. CD into the backend: `cd backend`
+2. Install packages: `npm install`
+3. Configure `.env` with:
+   - `SUPABASE_URL`
+   - `SUPABASE_SERVICE_ROLE_KEY` (recommended) or `SUPABASE_KEY`
+   - `JWT_SECRET`
+   - `EMAIL_USER` and `EMAIL_PASS`
+4. In Supabase SQL Editor, run `backend/supabase-schema.sql`.
+5. Seed first admin:
+   - `npm run seed:admin`
+   - This creates `admin / password123` if missing.
+6. Start backend:
+   - Dev: `npm run dev`
+   - Start: `npm start`
 
 ## 2. Player Web Setup
 1. `cd player-web`

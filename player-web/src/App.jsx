@@ -4,6 +4,7 @@ import logo from './assets/logo.png';
 import './index.css';
 
 const POSITIONS = ['Goalkeeper', 'CB', 'LB', 'RB', 'CM', 'CDM', 'CAM', 'LW', 'RW', 'CF', 'ST'];
+const AGE_CATEGORIES = ['U13', 'U15', 'U17', 'U19', 'U20', 'SENIOR'];
 const API_URL = 'http://localhost:5000/api';
 
 function App() {
@@ -12,6 +13,7 @@ function App() {
     email: '',
     phone: '',
     dateOfBirth: '',
+    ageCategory: 'U20',
     positions: [],
     profilePhoto: ''
   });
@@ -78,7 +80,7 @@ function App() {
           </p>
           <button className="btn-primary" onClick={() => {
             setIsSuccess(false);
-            setFormData({ fullName: '', email: '', phone: '', dateOfBirth: '', positions: [], profilePhoto: '' });
+            setFormData({ fullName: '', email: '', phone: '', dateOfBirth: '', ageCategory: 'U20', positions: [], profilePhoto: '' });
           }}>Register Another Player</button>
         </div>
       </div>
@@ -144,6 +146,21 @@ function App() {
               onChange={handleInputChange}
               required
             />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Age Category</label>
+            <select
+              className="form-input"
+              name="ageCategory"
+              value={formData.ageCategory}
+              onChange={handleInputChange}
+              required
+            >
+              {AGE_CATEGORIES.map((category) => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
           </div>
 
           <div className="form-group">

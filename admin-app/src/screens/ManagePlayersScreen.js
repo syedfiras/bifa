@@ -6,17 +6,21 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
 const API_URL = Platform.OS === 'web' ? 'http://127.0.0.1:5000/api' : 'http://192.168.1.100:5000/api';
+const AGE_CATEGORIES = ['All', 'U13', 'U15', 'U17', 'U19', 'U20', 'SENIOR'];
 
 export default function ManagePlayersScreen({ navigation }) {
     const [players, setPlayers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState('pending');
+    const [filterAgeCategory, setFilterAgeCategory] = useState('All');
 
     const loadPlayers = async () => {
         setLoading(true);
         try {
             const token = await AsyncStorage.getItem('token');
-            const res = await axios.get(`${API_URL}/players?status=${filterStatus}`, { headers: { Authorization: `Bearer ${token}` } });
+            let queryUrl = `${API_URL}/players?status=${filterStatus}`;
+            if (filterAgeCategory !== 'All') queryUrl += `&ageCategory=${encodeURIComponent(filterAgeCategory)}`;
+            const res = await axios.get(queryUrl, { headers: { Authorization: `Bearer ${token}` } });
             setPlayers(res.data.data);
         } catch (e) {
             console.log(e);
@@ -27,11 +31,11 @@ export default function ManagePlayersScreen({ navigation }) {
     useEffect(() => {
         const u = navigation.addListener('focus', () => loadPlayers());
         return u;
-    }, [navigation, filterStatus]);
+    }, [navigation, filterStatus, filterAgeCategory]);
 
     useEffect(() => {
         loadPlayers();
-    }, [filterStatus]);
+    }, [filterStatus, filterAgeCategory]);
 
     const renderItem = ({ item }) => (
         <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('PlayerDetail', { id: item._id })}>
@@ -46,7 +50,7 @@ export default function ManagePlayersScreen({ navigation }) {
                     )}
                     <View style={styles.info}>
                         <Text style={styles.name}>{item.fullName}</Text>
-                        <Text style={styles.details}>{item.positions.join(', ')}</Text>
+                        <Text style={styles.details}>{item.positions.join(', ')} • {item.ageCategory || 'U20'}</Text>
                     </View>
                     <View style={[styles.badge, item.status === 'pending' ? styles.bgWarning : styles.bgDanger]}>
                         <Text style={styles.badgeText}>{item.status}</Text>
@@ -67,6 +71,18 @@ export default function ManagePlayersScreen({ navigation }) {
                 <TouchableOpacity style={[styles.filterBtn, filterStatus === 'declined' && styles.filterActive]} onPress={() => setFilterStatus('declined')}>
                     <Text style={[styles.filterText, filterStatus === 'declined' && styles.filterTextActive]}>Declined</Text>
                 </TouchableOpacity>
+            </View>
+
+            <View style={styles.ageFilterContainer}>
+                {AGE_CATEGORIES.map((category) => (
+                    <TouchableOpacity
+                        key={category}
+                        style={[styles.ageChip, filterAgeCategory === category && styles.ageChipActive]}
+                        onPress={() => setFilterAgeCategory(category)}
+                    >
+                        <Text style={[styles.ageChipText, filterAgeCategory === category && styles.ageChipTextActive]}>{category}</Text>
+                    </TouchableOpacity>
+                ))}
             </View>
 
             {loading ? (
@@ -91,6 +107,11 @@ const styles = StyleSheet.create({
     filterActive: { backgroundColor: '#f4ea26', borderColor: '#f4ea26', shadowColor: '#f4ea26', shadowOpacity: 0.2, shadowRadius: 10, elevation: 4 },
     filterText: { color: '#a1a1aa', fontWeight: 'bold' },
     filterTextActive: { color: '#0c0c0c', fontWeight: '900' },
+    ageFilterContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#222', backgroundColor: '#111' },
+    ageChip: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 18, backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: '#333', margin: 4 },
+    ageChipActive: { backgroundColor: '#f4ea26', borderColor: '#f4ea26' },
+    ageChipText: { color: '#a1a1aa', fontWeight: '700', fontSize: 12 },
+    ageChipTextActive: { color: '#0c0c0c' },
     list: { paddingHorizontal: 15, paddingTop: 15, paddingBottom: 25 },
     card: { borderRadius: 16, marginBottom: 12, elevation: 3, borderWidth: 1, borderColor: '#333' },
     cardContent: { padding: 15, flexDirection: 'row', alignItems: 'center' },

@@ -4,21 +4,24 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 const API_URL = Platform.OS === 'web' ? 'http://localhost:5000/api' : 'http://192.168.1.100:5000/api';
+const AGE_CATEGORIES = ['All', 'U13', 'U15', 'U17', 'U19', 'U20', 'SENIOR'];
 
 export default function PlayersScreen({ navigation }) {
     const [players, setPlayers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filterPos, setFilterPos] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
+    const [filterAgeCategory, setFilterAgeCategory] = useState('All');
 
     const loadPlayers = async () => {
         setLoading(true);
         try {
             const token = await AsyncStorage.getItem('token');
-            // Construct query manually
-            let queryUrl = `${API_URL}/players?`;
-            if (filterPos) queryUrl += `position=${filterPos}&`;
-            if (filterStatus) queryUrl += `status=${filterStatus}`;
+            const params = new URLSearchParams();
+            if (filterPos) params.append('position', filterPos);
+            if (filterStatus) params.append('status', filterStatus);
+            if (filterAgeCategory !== 'All') params.append('ageCategory', filterAgeCategory);
+            const queryUrl = `${API_URL}/players?${params.toString()}`;
 
             const res = await axios.get(queryUrl, { headers: { Authorization: `Bearer ${token}` } });
             setPlayers(res.data.data);
@@ -31,17 +34,17 @@ export default function PlayersScreen({ navigation }) {
     useEffect(() => {
         const u = navigation.addListener('focus', () => loadPlayers());
         return u;
-    }, [navigation, filterPos, filterStatus]);
+    }, [navigation, filterPos, filterStatus, filterAgeCategory]);
 
     useEffect(() => {
         loadPlayers();
-    }, [filterPos, filterStatus]);
+    }, [filterPos, filterStatus, filterAgeCategory]);
 
     const renderItem = ({ item }) => (
         <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('PlayerDetail', { id: item._id })}>
             <View>
                 <Text style={styles.name}>{item.fullName}</Text>
-                <Text style={styles.details}>{item.positions.join(', ')}</Text>
+                <Text style={styles.details}>{item.positions.join(', ')} • {item.ageCategory || 'U20'}</Text>
             </View>
             <View style={[styles.badge, item.status === 'accepted' ? styles.bgSuccess : item.status === 'declined' ? styles.bgDanger : styles.bgWarning]}>
                 <Text style={styles.badgeText}>{item.status}</Text>
@@ -64,6 +67,18 @@ export default function PlayersScreen({ navigation }) {
                 </TouchableOpacity>
             </View>
 
+            <View style={styles.ageFilterContainer}>
+                {AGE_CATEGORIES.map((category) => (
+                    <TouchableOpacity
+                        key={category}
+                        style={[styles.filterBtn, filterAgeCategory === category && styles.filterActive]}
+                        onPress={() => setFilterAgeCategory(category)}
+                    >
+                        <Text style={styles.filterText}>{category}</Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
+
             {loading ? (
                 <ActivityIndicator size="large" color="#f4ea26" />
             ) : (
@@ -82,6 +97,7 @@ export default function PlayersScreen({ navigation }) {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#0c0c0c', padding: 15 },
     filterContainer: { flexDirection: 'row', marginBottom: 15, justifyContent: 'space-around' },
+    ageFilterContainer: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 10, justifyContent: 'center' },
     filterBtn: { paddingVertical: 8, paddingHorizontal: 15, borderRadius: 20, backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: '#333' },
     filterActive: { backgroundColor: '#f4ea26', borderColor: '#f4ea26' },
     filterText: { color: '#fff', fontWeight: 'bold' },

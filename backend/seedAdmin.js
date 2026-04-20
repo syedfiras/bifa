@@ -1,10 +1,9 @@
 require('dotenv').config();
-const mongoose = require('mongoose');
 const Admin = require('./models/Admin');
 
-mongoose.connect(process.env.MONGO_URI)
-    .then(async () => {
-        console.log('DB connected');
+const run = async () => {
+    try {
+        console.log('Seeding admin in Supabase...');
         const exist = await Admin.findOne({ username: 'admin' });
         if (!exist) {
             await Admin.create({ username: 'admin', password: 'password123' });
@@ -13,8 +12,10 @@ mongoose.connect(process.env.MONGO_URI)
             console.log('Admin already exists');
         }
         process.exit(0);
-    })
-    .catch(err => {
-        console.log(err);
+    } catch (error) {
+        console.log(error.message);
         process.exit(1);
-    });
+    }
+};
+
+run();

@@ -68,7 +68,7 @@ export default function PlayerDetailScreen({ route, navigation }) {
                 )}
                 <Text style={styles.heroName}>{player.fullName}</Text>
                 <View style={styles.posBadge}>
-                    <Text style={styles.posBadgeText}>{player.positions.join(' • ')}</Text>
+                    <Text style={styles.posBadgeText}>{player.positions.join(' • ')} • {player.ageCategory || 'U20'}</Text>
                 </View>
             </View>
 
@@ -91,6 +91,14 @@ export default function PlayerDetailScreen({ route, navigation }) {
 
                 <View style={styles.infoRow}>
                     <Ionicons name="calendar" size={20} color="#f4ea26" style={styles.icon} />
+                    <View>
+                        <Text style={styles.label}>Date of Birth</Text>
+                        <Text style={styles.value}>{new Date(player.dateOfBirth).toLocaleDateString()}</Text>
+                    </View>
+                </View>
+
+                <View style={styles.infoRow}>
+                    <Ionicons name="calendar-outline" size={20} color="#f4ea26" style={styles.icon} />
                     <View>
                         <Text style={styles.label}>Registration Date</Text>
                         <Text style={styles.value}>{new Date(player.registrationDate).toLocaleDateString()}</Text>
