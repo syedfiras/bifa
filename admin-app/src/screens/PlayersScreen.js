@@ -3,7 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, ActivityI
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-const API_URL = Platform.OS === 'web' ? 'http://localhost:5000/api' : 'http://192.168.1.100:5000/api';
+const API_URL = 'https://bifa-1.onrender.com/api';
 const AGE_CATEGORIES = ['All', 'U13', 'U15', 'U17', 'U19', 'U20', 'SENIOR'];
 
 export default function PlayersScreen({ navigation }) {
@@ -74,7 +74,7 @@ export default function PlayersScreen({ navigation }) {
                         style={[styles.filterBtn, filterAgeCategory === category && styles.filterActive]}
                         onPress={() => setFilterAgeCategory(category)}
                     >
-                        <Text style={styles.filterText}>{category}</Text>
+                        <Text style={[styles.filterText, filterAgeCategory === category && styles.filterTextActive]}>{category}</Text>
                     </TouchableOpacity>
                 ))}
             </View>
@@ -101,6 +101,7 @@ const styles = StyleSheet.create({
     filterBtn: { paddingVertical: 8, paddingHorizontal: 15, borderRadius: 20, backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: '#333' },
     filterActive: { backgroundColor: '#f4ea26', borderColor: '#f4ea26' },
     filterText: { color: '#fff', fontWeight: 'bold' },
+    filterTextActive: { color: '#0c0c0c' },
     card: { backgroundColor: '#1a1a1a', padding: 15, borderRadius: 10, marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     name: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
     details: { color: '#a1a1aa' },

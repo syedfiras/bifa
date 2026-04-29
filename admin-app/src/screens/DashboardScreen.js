@@ -5,7 +5,7 @@ import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 
-const API_URL = Platform.OS === 'web' ? 'http://127.0.0.1:5000/api' : 'http://192.168.1.100:5000/api';
+const API_URL = 'https://bifa-1.onrender.com/api';
 
 export default function DashboardScreen({ navigation }) {
     const [stats, setStats] = useState({ totalPlayers: 0, pending: 0, accepted: 0, declined: 0, referees: 0 });

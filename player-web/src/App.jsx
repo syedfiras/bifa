@@ -5,7 +5,7 @@ import './index.css';
 
 const POSITIONS = ['Goalkeeper', 'CB', 'LB', 'RB', 'CM', 'CDM', 'CAM', 'LW', 'RW', 'CF', 'ST'];
 const AGE_CATEGORIES = ['U13', 'U15', 'U17', 'U19', 'U20', 'SENIOR'];
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'https://bifa-1.onrender.com/api';
 
 function App() {
   const [formData, setFormData] = useState({

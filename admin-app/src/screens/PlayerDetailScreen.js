@@ -5,7 +5,7 @@ import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
-const API_URL = Platform.OS === 'web' ? 'http://127.0.0.1:5000/api' : 'http://192.168.1.100:5000/api';
+const API_URL = 'https://bifa-1.onrender.com/api';
 
 export default function PlayerDetailScreen({ route, navigation }) {
     const { id } = route.params;

@@ -4,21 +4,40 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const API_URL = Platform.OS === 'web' ? 'http://127.0.0.1:5000/api' : 'http://192.168.1.100:5000/api';
+const API_URL = 'https://bifa-1.onrender.com/api';
 
 export default function LoginScreen({ setToken }) {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
 
     const handleLogin = async () => {
+        const normalizedUsername = username.trim().toLowerCase();
+        const normalizedPassword = password;
+
+        if (!normalizedUsername || !normalizedPassword) {
+            Alert.alert('Login Failed', 'Please enter username and password');
+            return;
+        }
+
         try {
-            const res = await axios.post(`${API_URL}/auth/login`, { username, password });
+            const res = await axios.post(
+                `${API_URL}/auth/login`,
+                { username: normalizedUsername, password: normalizedPassword },
+                { timeout: 15000 }
+            );
             if (res.data.success) {
-                await AsyncStorage.setItem('token', res.data.token);
                 setToken(res.data.token);
+                try {
+                    await AsyncStorage.setItem('token', res.data.token);
+                } catch (_storageError) {
+                    // Keep user logged in for current session even if persistence fails.
+                }
             }
         } catch (err) {
-            Alert.alert('Login Failed', err.response?.data?.message || 'Error connecting to server');
+            const message =
+                err.response?.data?.message ||
+                (err.code === 'ECONNABORTED' ? 'Request timed out. Please try again.' : 'Error connecting to server');
+            Alert.alert('Login Failed', message);
         }
     };
 
@@ -27,7 +46,7 @@ export default function LoginScreen({ setToken }) {
             <LinearGradient colors={['#1a1a1a', '#050505']} style={StyleSheet.absoluteFillObject} />
             <View style={styles.content}>
                 <View style={styles.logoContainer}>
-                    <Image source={require('../../assets/images/logo.png')} style={styles.logoImage} />
+                    <Image source={require('../../assets/images/splash-icon.png')} style={styles.logoImage} />
                     <Text style={styles.subtitle}>MANAGEMENT SYSTEM</Text>
                 </View>
 
