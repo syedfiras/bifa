@@ -17,7 +17,7 @@ const generateAccessPass = () => {
 
 router.post('/register', async (req, res) => {
     try {
-        const { fullName, email, phone, dateOfBirth, positions, profilePhoto, ageCategory } = req.body;
+        const { fullName, email, phone, dateOfBirth, positions, profilePhoto, ageCategory, joiningYear } = req.body;
 
         if (!positions || positions.length === 0 || positions.length > 3) {
             return res.status(400).json({ success: false, message: 'Must select between 1 and 3 positions' });
@@ -27,8 +27,20 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ success: false, message: `ageCategory must be one of: ${AGE_CATEGORIES.join(', ')}` });
         }
 
+        const parsedYear = Number(joiningYear);
+        if (!joiningYear || Number.isNaN(parsedYear) || parsedYear < 1900 || parsedYear > new Date().getFullYear()) {
+            return res.status(400).json({ success: false, message: 'joiningYear must be a valid year' });
+        }
+
         const player = await Player.create({
-            fullName, email, phone, dateOfBirth, positions, profilePhoto, ageCategory
+            fullName,
+            email,
+            phone,
+            dateOfBirth,
+            positions,
+            profilePhoto,
+            ageCategory,
+            joiningYear: parsedYear
         });
 
         res.status(201).json({ success: true, data: player });

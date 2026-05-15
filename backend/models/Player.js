@@ -14,7 +14,8 @@ const mapRow = (row) => ({
     profilePhoto: row.profile_photo,
     status: row.status,
     accessPass: row.access_pass,
-    registrationDate: row.registration_date
+    registrationDate: row.registration_date,
+    joiningYear: row.joining_year
 });
 
 class PlayerRecord {
@@ -31,6 +32,7 @@ class PlayerRecord {
         this.status = row.status;
         this.accessPass = row.access_pass;
         this.registrationDate = row.registration_date;
+        this.joiningYear = row.joining_year;
     }
 
     async save() {
@@ -101,6 +103,10 @@ class Player {
             profile_photo: payload.profilePhoto || null,
             status: 'pending'
         };
+
+        if (payload.joiningYear !== undefined) {
+            basePayload.joining_year = Number(payload.joiningYear);
+        }
 
         const withCategoryPayload = { ...basePayload, age_category: payload.ageCategory };
         let result = await supabase.from(TABLE).insert(withCategoryPayload).select().single();

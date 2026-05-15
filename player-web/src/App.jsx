@@ -8,12 +8,14 @@ const AGE_CATEGORIES = ['U13', 'U15', 'U17', 'U19', 'U20', 'SENIOR'];
 const API_URL = 'https://bifa-1.onrender.com/api';
 
 function App() {
+  const currentYear = new Date().getFullYear();
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     phone: '',
     dateOfBirth: '',
     ageCategory: 'U20',
+    joiningYear: currentYear.toString(),
     positions: [],
     profilePhoto: ''
   });
@@ -60,7 +62,10 @@ function App() {
 
     setIsSubmitting(true);
     try {
-      await axios.post(`${API_URL}/players/register`, formData);
+      await axios.post(`${API_URL}/players/register`, {
+        ...formData,
+        joiningYear: Number(formData.joiningYear)
+      });
       setIsSuccess(true);
     } catch (err) {
       setError(err.response?.data?.message || 'Something went wrong during registration.');
@@ -80,7 +85,7 @@ function App() {
           </p>
           <button className="btn-primary" onClick={() => {
             setIsSuccess(false);
-            setFormData({ fullName: '', email: '', phone: '', dateOfBirth: '', ageCategory: 'U20', positions: [], profilePhoto: '' });
+            setFormData({ fullName: '', email: '', phone: '', dateOfBirth: '', ageCategory: 'U20', joiningYear: currentYear.toString(), positions: [], profilePhoto: '' });
           }}>Register Another Player</button>
         </div>
       </div>
@@ -161,6 +166,21 @@ function App() {
                 <option key={category} value={category}>{category}</option>
               ))}
             </select>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Joining Year</label>
+            <input
+              type="number"
+              className="form-input"
+              name="joiningYear"
+              placeholder="Enter joining year"
+              value={formData.joiningYear}
+              onChange={handleInputChange}
+              min="1900"
+              max={currentYear}
+              required
+            />
           </div>
 
           <div className="form-group">

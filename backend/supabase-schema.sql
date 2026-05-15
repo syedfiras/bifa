@@ -21,7 +21,8 @@ create table if not exists public.players (
     profile_photo text,
     status text not null default 'pending' check (status in ('pending', 'accepted', 'declined')),
     access_pass text unique,
-    registration_date timestamptz not null default now()
+    registration_date timestamptz not null default now(),
+    joining_year integer not null default date_part('year', now())::int
 );
 
 alter table public.players
