@@ -47,13 +47,32 @@ function ManageStack() {
 function MainTabs({ setToken }) {
     return (
         <Tab.Navigator
+            sceneContainerStyle={{ paddingBottom: 90 }}
             screenOptions={({ route }) => ({
                 headerStyle: { backgroundColor: '#f4ea26' },
                 headerTintColor: '#0c0c0c',
                 headerTitleStyle: { fontWeight: 'bold' },
-                tabBarStyle: { backgroundColor: '#1a1a1a', borderTopColor: '#333' },
+                tabBarStyle: {
+                    position: 'absolute',
+                    bottom: 16,
+                    left: 16,
+                    right: 16,
+                    elevation: 10,
+                    backgroundColor: '#1a1a1a',
+                    borderRadius: 24,
+                    height: 70,
+                    borderTopWidth: 0,
+                    shadowColor: '#000',
+                    shadowOpacity: 0.18,
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowRadius: 12,
+                },
                 tabBarActiveTintColor: '#f4ea26',
                 tabBarInactiveTintColor: '#a1a1aa',
+                tabBarShowLabel: true,
+                tabBarLabelStyle: { fontSize: 11, marginBottom: 4 },
+                tabBarItemStyle: { paddingTop: 8 },
+                tabBarHideOnKeyboard: true,
                 tabBarIcon: ({ color, size }) => {
                     let iconName;
                     if (route.name === 'Dashboard') iconName = 'home';

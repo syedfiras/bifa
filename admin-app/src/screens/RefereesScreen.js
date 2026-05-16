@@ -115,6 +115,42 @@ export default function RefereesScreen({ route, navigation }) {
         ]);
     };
 
+    const renderHeader = () => (
+        <View>
+            <View style={styles.headerRow}>
+                <Text style={styles.heading}>Match Officials</Text>
+                <TouchableOpacity onPress={() => { setShowAdd(!showAdd); setEditingId(null); setFormData({ fullName: '', email: '', phone: '', licenseNumber: '', experienceYears: '' }); }}>
+                    <LinearGradient colors={['#f4ea26', '#b5ad10']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.addBtn}>
+                        <Ionicons name={showAdd ? 'close' : 'add'} size={18} color="#000" />
+                        <Text style={styles.addBtnText}>{showAdd ? 'CANCEL' : 'ADD NEW'}</Text>
+                    </LinearGradient>
+                </TouchableOpacity>
+            </View>
+
+            {showAdd && (
+                <View style={styles.formCard}>
+                    <Text style={styles.formTitle}>{editingId ? 'Edit Official Specs' : 'Register New Official'}</Text>
+                    <TextInput style={styles.input} placeholder="Full Name" placeholderTextColor="#666" value={formData.fullName} onChangeText={t => setFormData({ ...formData, fullName: t })} />
+                    <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#666" value={formData.email} onChangeText={t => setFormData({ ...formData, email: t })} autoCapitalize="none" />
+                    <TextInput style={styles.input} placeholder="Phone" placeholderTextColor="#666" value={formData.phone} onChangeText={t => setFormData({ ...formData, phone: t })} />
+                    <TextInput style={styles.input} placeholder="RIN Number" placeholderTextColor="#666" value={formData.licenseNumber} onChangeText={t => setFormData({ ...formData, licenseNumber: t })} />
+                    <TextInput style={styles.input} placeholder="Experience Years" placeholderTextColor="#666" keyboardType="numeric" value={formData.experienceYears} onChangeText={t => setFormData({ ...formData, experienceYears: t })} />
+
+                    <TouchableOpacity onPress={handleSave} style={styles.submitBtn} activeOpacity={0.85}>
+                        <LinearGradient colors={['#f4ea26', '#b5ad10']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.submitGradient}>
+                            <Text style={styles.submitBtnText}>{editingId ? 'UPDATE RECORD' : 'SAVE RECORD'}</Text>
+                        </LinearGradient>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => { setShowAdd(false); setEditingId(null); setFormData({ fullName: '', email: '', phone: '', licenseNumber: '', experienceYears: '' }); }} style={styles.doneBtn} activeOpacity={0.85}>
+                        <LinearGradient colors={['#2e2e2e', '#151515']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.doneGradient}>
+                            <Text style={styles.doneBtnText}>DONE</Text>
+                        </LinearGradient>
+                    </TouchableOpacity>
+                </View>
+            )}
+        </View>
+    );
+
     const renderItem = ({ item }) => {
         const isSelected = selectedRefereeId && item._id === selectedRefereeId;
         return (
@@ -125,7 +161,7 @@ export default function RefereesScreen({ route, navigation }) {
                 </View>
                 <View style={styles.info}>
                     <Text style={styles.name}>{item.fullName}</Text>
-                    <Text style={styles.details}>Lic No. {item.licenseNumber} • {item.experienceYears} yrs</Text>
+                    <Text style={styles.details}>RIN No. {item.licenseNumber} • {item.experienceYears} yrs</Text>
                 </View>
                 <View style={[styles.badge, item.status === 'active' ? styles.bgSuccess : styles.bgWarning]}>
                     <Text style={styles.badgeText}>{item.status}</Text>
@@ -149,33 +185,6 @@ export default function RefereesScreen({ route, navigation }) {
         <View style={styles.container}>
             <LinearGradient colors={['#1a1a1a', '#0c0c0c']} style={StyleSheet.absoluteFillObject} />
 
-            <View style={styles.headerRow}>
-                <Text style={styles.heading}>Match Officials</Text>
-                <TouchableOpacity onPress={() => { setShowAdd(!showAdd); setEditingId(null); setFormData({ fullName: '', email: '', phone: '', licenseNumber: '', experienceYears: '' }); }}>
-                    <LinearGradient colors={['#f4ea26', '#b5ad10']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.addBtn}>
-                        <Ionicons name={showAdd ? "close" : "add"} size={18} color="#000" />
-                        <Text style={styles.addBtnText}>{showAdd ? 'CANCEL' : 'ADD NEW'}</Text>
-                    </LinearGradient>
-                </TouchableOpacity>
-            </View>
-
-            {showAdd && (
-                <View style={styles.formCard}>
-                    <Text style={styles.formTitle}>{editingId ? 'Edit Official Specs' : 'Register New Official'}</Text>
-                    <TextInput style={styles.input} placeholder="Full Name" placeholderTextColor="#666" value={formData.fullName} onChangeText={t => setFormData({ ...formData, fullName: t })} />
-                    <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#666" value={formData.email} onChangeText={t => setFormData({ ...formData, email: t })} autoCapitalize="none" />
-                    <TextInput style={styles.input} placeholder="Phone" placeholderTextColor="#666" value={formData.phone} onChangeText={t => setFormData({ ...formData, phone: t })} />
-                    <TextInput style={styles.input} placeholder="RIN Number" placeholderTextColor="#666" value={formData.licenseNumber} onChangeText={t => setFormData({ ...formData, licenseNumber: t })} />
-                    <TextInput style={styles.input} placeholder="Experience Years" placeholderTextColor="#666" keyboardType="numeric" value={formData.experienceYears} onChangeText={t => setFormData({ ...formData, experienceYears: t })} />
-
-                    <TouchableOpacity onPress={handleSave}>
-                        <LinearGradient colors={['#f4ea26', '#b5ad10']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.submitBtn}>
-                            <Text style={styles.submitBtnText}>{editingId ? 'UPDATE RECORD' : 'SAVE RECORD'}</Text>
-                        </LinearGradient>
-                    </TouchableOpacity>
-                </View>
-            )}
-
             {loading ? (
                 <ActivityIndicator size="large" color="#f4ea26" style={{ marginTop: 20 }} />
             ) : (
@@ -184,7 +193,8 @@ export default function RefereesScreen({ route, navigation }) {
                     data={referees}
                     keyExtractor={item => item._id}
                     renderItem={renderItem}
-                    contentContainerStyle={{ paddingHorizontal: 15, paddingBottom: 20 }}
+                    contentContainerStyle={styles.listContainer}
+                    ListHeaderComponent={renderHeader}
                     ListEmptyComponent={<View style={styles.empty}><FontAwesome5 name="gavel" size={30} color="#666" /><Text style={styles.emptyText}>No match officials registered.</Text></View>}
                     onScrollToIndexFailed={({ index }) => {
                         if (referees.length > 0) {
@@ -202,27 +212,32 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#0c0c0c' },
     headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#222' },
     heading: { color: '#fff', fontSize: 24, fontWeight: '900', letterSpacing: 0.5 },
-    addBtn: { flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, alignItems: 'center' },
-    addBtnText: { color: '#000', fontWeight: 'bold', marginLeft: 4, fontSize: 12 },
-    formCard: { backgroundColor: '#1a1a1a', margin: 15, padding: 20, borderRadius: 16, borderWidth: 1, borderColor: '#333' },
-    formTitle: { color: '#fff', fontSize: 16, marginBottom: 15, fontWeight: 'bold' },
-    input: { backgroundColor: '#222', color: '#fff', padding: 15, borderRadius: 10, marginBottom: 12, borderWidth: 1, borderColor: '#333' },
-    submitBtn: { padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 5 },
+    addBtn: { flexDirection: 'row', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 24, alignItems: 'center' },
+    addBtnText: { color: '#000', fontWeight: 'bold', marginLeft: 6, fontSize: 13 },
+    formCard: { backgroundColor: '#111', marginHorizontal: 20, marginTop: 20, padding: 22, borderRadius: 20, borderWidth: 1, borderColor: '#333', shadowColor: '#000', shadowOpacity: 0.18, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12 },
+    formTitle: { color: '#fff', fontSize: 18, marginBottom: 16, fontWeight: '900' },
+    input: { backgroundColor: '#1f1f1f', color: '#fff', padding: 14, borderRadius: 14, marginBottom: 14, borderWidth: 1, borderColor: '#333' },
+    submitBtn: { borderRadius: 14, overflow: 'hidden', marginTop: 10 },
+    submitGradient: { alignItems: 'center', paddingVertical: 14, borderRadius: 14 },
     submitBtnText: { color: '#0c0c0c', fontWeight: 'bold', letterSpacing: 1 },
-    card: { marginHorizontal: 15, borderRadius: 16, marginBottom: 15, elevation: 4, borderWidth: 1, borderColor: '#333' },
-    selectedCard: { borderColor: '#f4ea26', borderWidth: 2 },
-    cardContent: { padding: 15, flexDirection: 'row', alignItems: 'center' },
-    avatar: { width: 45, height: 45, borderRadius: 22.5, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+    doneBtn: { borderRadius: 14, overflow: 'hidden', marginTop: 10 },
+    doneGradient: { alignItems: 'center', paddingVertical: 14, borderRadius: 14 },
+    doneBtnText: { color: '#fff', fontWeight: 'bold', letterSpacing: 1 },
+    card: { marginHorizontal: 20, borderRadius: 20, marginBottom: 18, borderWidth: 1, borderColor: '#222', overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.16, shadowOffset: { width: 0, height: 8 }, shadowRadius: 12, elevation: 6 },
+    selectedCard: { borderColor: '#f4ea26', borderWidth: 1.8 },
+    cardContent: { padding: 18, flexDirection: 'row', alignItems: 'center' },
+    avatar: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginRight: 15, borderWidth: 1, borderColor: '#333' },
     info: { flex: 1 },
-    name: { color: '#fff', fontSize: 17, fontWeight: 'bold' },
+    name: { color: '#fff', fontSize: 17, fontWeight: '800' },
     details: { color: '#a1a1aa', fontSize: 13, marginTop: 4 },
-    badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-    badgeText: { color: '#fff', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' },
+    badge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+    badgeText: { color: '#fff', fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
     bgWarning: { backgroundColor: '#f39c12' },
     bgSuccess: { backgroundColor: '#4CAF50' },
-    actionsBar: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#2c2c2c', paddingVertical: 10, paddingHorizontal: 15 },
-    editBtn: { flexDirection: 'row', alignItems: 'center', marginRight: 20 },
-    delBtn: { flexDirection: 'row', alignItems: 'center' },
-    empty: { alignItems: 'center', marginTop: 50 },
-    emptyText: { color: '#666', marginTop: 15, fontWeight: 'bold' }
+    actionsBar: { flexDirection: 'row', justifyContent: 'flex-end', borderTopWidth: 1, borderTopColor: '#222', paddingVertical: 12, paddingHorizontal: 18, backgroundColor: '#111' },
+    editBtn: { flexDirection: 'row', alignItems: 'center', marginRight: 16, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 14, backgroundColor: '#222' },
+    delBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 14, backgroundColor: '#2a1212' },
+    listContainer: { paddingTop: 14, paddingHorizontal: 20, paddingBottom: 28 },
+    empty: { alignItems: 'center', marginTop: 60 },
+    emptyText: { color: '#888', marginTop: 16, fontWeight: '700', fontSize: 15 }
 });

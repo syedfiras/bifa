@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, TextInput } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, TextInput, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -55,8 +55,8 @@ export default function DlicenseScreen({ route, navigation }) {
     }, [selectedRefereeId, referees]);
 
     const handleSave = async () => {
-        if (!formData.fullName || !formData.email || !formData.licenseNumber) {
-            Alert.alert('Validation', 'Name, email, and license number are required.');
+        if (!formData.fullName || !formData.licenseNumber) {
+            Alert.alert('Validation', 'Name and license number are required.');
             return;
         }
 
@@ -79,54 +79,30 @@ export default function DlicenseScreen({ route, navigation }) {
         }
     };
 
-    const loadDlicenses = async () => {
-        setLoading(true);
-        try {
-            const token = await AsyncStorage.getItem('token');
-            const res = await axios.get(`${API_URL}/referees`, { headers: { Authorization: `Bearer ${token}` } });
-            setReferees((res.data.data || []).filter((item) => item.licenseNumber));
-        } catch (error) {
-            console.log(error);
-            Alert.alert('Error', 'Unable to load D-License list.');
-        }
-        setLoading(false);
+    const handleDelete = async (id) => {
+        Alert.alert('Delete D-License', 'Are you sure you want to delete this D-license record?', [
+            { text: 'Cancel', style: 'cancel' },
+            {
+                text: 'Delete',
+                style: 'destructive',
+                onPress: async () => {
+                    try {
+                        setLoading(true);
+                        const token = await AsyncStorage.getItem('token');
+                        await axios.delete(`${API_URL}/referees/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+                        loadDlicenses();
+                    } catch (error) {
+                        console.log(error);
+                        Alert.alert('Error', 'Unable to delete D-license.');
+                        setLoading(false);
+                    }
+                }
+            }
+        ]);
     };
 
-    useEffect(() => {
-        const unsubscribe = navigation.addListener('focus', () => loadDlicenses());
-        return unsubscribe;
-    }, [navigation]);
-
-    const renderItem = ({ item }) => (
-        <TouchableOpacity
-            activeOpacity={0.85}
-            style={[styles.card, item._id === selectedRefereeId || item.id === selectedRefereeId ? styles.selectedCard : null]}
-        >
-            <View style={styles.cardRow}>
-                <View style={styles.cardLeft}>
-                    <Text style={styles.name}>{item.fullName}</Text>
-                    <Text style={styles.details}>{item.email}</Text>
-                </View>
-                <View style={styles.cardRight}>
-                    <Text style={styles.licenseLabel}>D-License</Text>
-                    <Text style={styles.licenseValue}>{item.licenseNumber}</Text>
-                </View>
-            </View>
-            <View style={styles.metaRow}>
-                <Text style={styles.metaText}>Experience: {item.experienceYears} yrs</Text>
-                <Text style={styles.metaText}>Status: {item.status}</Text>
-            </View>
-        </TouchableOpacity>
-    );
-
-    return (
-        <View style={styles.container}>
-            <LinearGradient colors={['#1a1a1a', '#0c0c0c']} style={StyleSheet.absoluteFillObject} />
-            <View style={styles.header}>
-                <Text style={styles.title}>D-License Holders</Text>
-                <Text style={styles.subtitle}>A list of all referees currently holding a digital license.</Text>
-            </View>
-
+    const renderHeader = () => (
+        <View>
             <View style={styles.headerRow}>
                 <TouchableOpacity onPress={() => setShowAdd(!showAdd)} style={styles.addBtn}>
                     <LinearGradient colors={['#f4ea26', '#b5ad10']} style={styles.addBtnGradient}>
@@ -181,8 +157,76 @@ export default function DlicenseScreen({ route, navigation }) {
                             <Text style={styles.submitText}>SAVE D-LICENSE</Text>
                         </LinearGradient>
                     </TouchableOpacity>
+                    <TouchableOpacity onPress={() => { setShowAdd(false); setFormData({ fullName: '', email: '', phone: '', licenseNumber: '', experienceYears: '' }); }} style={styles.doneBtn} activeOpacity={0.85}>
+                        <LinearGradient colors={['#2e2e2e', '#151515']} style={styles.doneGradient}>
+                            <Text style={styles.doneBtnText}>DONE</Text>
+                        </LinearGradient>
+                    </TouchableOpacity>
                 </View>
             )}
+        </View>
+    );
+
+    const loadDlicenses = async () => {
+        setLoading(true);
+        try {
+            const token = await AsyncStorage.getItem('token');
+            const res = await axios.get(`${API_URL}/referees`, { headers: { Authorization: `Bearer ${token}` } });
+            setReferees((res.data.data || []).filter((item) => item.licenseNumber));
+        } catch (error) {
+            console.log(error);
+            Alert.alert('Error', 'Unable to load D-License list.');
+        }
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('focus', () => loadDlicenses());
+        return unsubscribe;
+    }, [navigation]);
+
+    const renderItem = ({ item }) => (
+        <View style={[styles.card, item._id === selectedRefereeId || item.id === selectedRefereeId ? styles.selectedCard : null]}>
+            <View style={styles.cardRow}>
+                <View style={styles.avatarWrapper}>
+                    {item.profilePhoto ? (
+                        <Image source={{ uri: item.profilePhoto }} style={styles.avatarImage} />
+                    ) : (
+                        <View style={styles.avatarPlaceholder}>
+                            <Ionicons name="person" size={24} color="#f4ea26" />
+                        </View>
+                    )}
+                </View>
+                <View style={styles.cardLeft}>
+                    <Text style={styles.name}>{item.fullName}</Text>
+                    {item.email ? <Text style={styles.details}>{item.email}</Text> : <Text style={styles.details}>No email provided</Text>}
+                    <Text style={styles.details}>{item.phone}</Text>
+                </View>
+                <View style={styles.cardRight}>
+                    <Text style={styles.licenseLabel}>D-License</Text>
+                    <Text style={styles.licenseValue}>{item.licenseNumber}</Text>
+                </View>
+            </View>
+            <View style={styles.metaRow}>
+                <Text style={styles.metaText}>Experience: {item.experienceYears} yrs</Text>
+                <Text style={styles.metaText}>Status: {item.status}</Text>
+            </View>
+            <View style={styles.deleteRow}>
+                <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(item._id)}>
+                    <Ionicons name="trash-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
+                    <Text style={styles.deleteText}>Delete D-License</Text>
+                </TouchableOpacity>
+            </View>
+        </View>
+    );
+
+    return (
+        <View style={styles.container}>
+            <LinearGradient colors={['#1a1a1a', '#0c0c0c']} style={StyleSheet.absoluteFillObject} />
+            <View style={styles.header}>
+                <Text style={styles.title}>D-License Holders</Text>
+                <Text style={styles.subtitle}>A list of all referees currently holding a digital license.</Text>
+            </View>
 
             {loading ? (
                 <ActivityIndicator size="large" color="#f4ea26" style={{ marginTop: 40 }} />
@@ -193,6 +237,9 @@ export default function DlicenseScreen({ route, navigation }) {
                     renderItem={renderItem}
                     ref={flatListRef}
                     contentContainerStyle={styles.list}
+                    ListHeaderComponent={renderHeader}
+                    ListHeaderComponentStyle={{ paddingBottom: showAdd ? 20 : 0 }}
+                    keyboardShouldPersistTaps="handled"
                     ListEmptyComponent={(
                         <View style={styles.empty}>
                             <Ionicons name="alert-circle" size={40} color="#666" />
@@ -231,6 +278,15 @@ const styles = StyleSheet.create({
     submitBtn: { borderRadius: 14, overflow: 'hidden' },
     submitGradient: { alignItems: 'center', paddingVertical: 14, borderRadius: 14 },
     submitText: { color: '#000', fontWeight: 'bold', letterSpacing: 0.8 },
+    doneBtn: { borderRadius: 14, overflow: 'hidden', marginTop: 10 },
+    doneGradient: { alignItems: 'center', paddingVertical: 14, borderRadius: 14 },
+    doneBtnText: { color: '#fff', fontWeight: 'bold', letterSpacing: 0.8 },
+    avatarWrapper: { marginRight: 12 },
+    avatarImage: { width: 60, height: 60, borderRadius: 30, borderWidth: 1, borderColor: '#333' },
+    avatarPlaceholder: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: '#333', justifyContent: 'center', alignItems: 'center' },
+    deleteRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12 },
+    deleteButton: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#b71c1c', borderRadius: 12 },
+    deleteText: { color: '#fff', fontWeight: '700' },
     empty: { alignItems: 'center', marginTop: 50 },
     emptyText: { color: '#666', marginTop: 12, fontSize: 15, textAlign: 'center' },
     selectedCard: { borderColor: '#f4ea26', borderWidth: 1.5, backgroundColor: '#1a1a1a' },
