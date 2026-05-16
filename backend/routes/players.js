@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Player = require('../models/Player');
+const Referee = require('../models/Referee');
 const { protect } = require('../middleware/auth');
 const sendEmail = require('../utils/email');
 
@@ -67,7 +68,9 @@ router.get('/:id', protect, async (req, res) => {
     try {
         const player = await Player.findById(req.params.id);
         if (!player) return res.status(404).json({ success: false, message: 'Player not found' });
-        res.status(200).json({ success: true, data: player });
+
+        const linkedReferee = await Referee.findByContact({ email: player.email, phone: player.phone });
+        res.status(200).json({ success: true, data: { ...player, linkedReferee } });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -114,9 +117,9 @@ router.put('/:id/accept', protect, async (req, res) => {
 
 router.put('/:id/decline', protect, async (req, res) => {
     try {
-        const player = await Player.findByIdAndUpdate(req.params.id, { status: 'declined' }, { new: true, runValidators: true });
+        const player = await Player.findByIdAndDelete(req.params.id);
         if (!player) return res.status(404).json({ success: false, message: 'Player not found' });
-        res.status(200).json({ success: true, data: player });
+        res.status(200).json({ success: true, data: {} });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

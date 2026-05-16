@@ -1,5 +1,5 @@
 // PlayerDetailScreen.jsx
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,
     Alert, ScrollView, Image
@@ -8,10 +8,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import * as MediaLibrary from 'expo-media-library';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
-import ViewShot from 'react-native-view-shot';
 import PlayerIdCard from '../components/PlayerIdCard';
 
 const API_URL = 'https://bifa-1.onrender.com/api';
@@ -20,8 +16,6 @@ export default function PlayerDetailScreen({ route, navigation }) {
     const { id } = route.params;
     const [player, setPlayer] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [downloading, setDownloading] = useState(false);
-    const idCardRef = useRef(null);
 
     const loadPlayer = async () => {
         try {
@@ -55,43 +49,40 @@ export default function PlayerDetailScreen({ route, navigation }) {
         }
     };
 
-    const handleDownloadIdCard = async () => {
-        try {
-            setDownloading(true);
+    const handleMatchOfficial = () => {
+        if (!player) return;
 
-            // 1. Capture the ID card view as a high-res PNG
-            const uri = await idCardRef.current.capture();
-
-            // 2. Request media library permission
-            const { status } = await MediaLibrary.requestPermissionsAsync();
-
-            if (status === 'granted') {
-                // Save directly to the device's photo library
-                const asset = await MediaLibrary.createAssetAsync(uri);
-                await MediaLibrary.createAlbumAsync('BIFA Player IDs', asset, false);
-                Alert.alert('Saved!', 'ID card saved to your Photos → BIFA Player IDs album.');
-            } else {
-                // Fallback: copy to a permanent location then share
-                const destPath = `${FileSystem.documentDirectory}${player.fullName.replace(/\s+/g, '_')}_ID.png`;
-                await FileSystem.copyAsync({ from: uri, to: destPath });
-
-                const canShare = await Sharing.isAvailableAsync();
-                if (canShare) {
-                    await Sharing.shareAsync(destPath, {
-                        mimeType: 'image/png',
-                        dialogTitle: `${player.fullName} - Player ID Card`,
-                        UTI: 'public.png',
-                    });
-                } else {
-                    Alert.alert('Saved', `ID card saved to:\n${destPath}`);
+        const params = player.linkedReferee
+            ? { selectedRefereeId: player.linkedReferee.id }
+            : {
+                openAddForm: true,
+                prefillReferee: {
+                    fullName: player.fullName,
+                    email: player.email,
+                    phone: player.phone,
                 }
-            }
-        } catch (e) {
-            console.log(e);
-            Alert.alert('Error', 'Failed to save ID card. Please try again.');
-        } finally {
-            setDownloading(false);
-        }
+            };
+
+        const targetNav = navigation.getParent?.() || navigation;
+        targetNav.navigate('Referees', params);
+    };
+
+    const handleDLicense = () => {
+        if (!player) return;
+
+        const params = player.linkedReferee
+            ? { selectedDlicenseId: player.linkedReferee.id }
+            : {
+                openAddForm: true,
+                prefillReferee: {
+                    fullName: player.fullName,
+                    email: player.email,
+                    phone: player.phone,
+                }
+            };
+
+        const parentNav = navigation.getParent?.() || navigation;
+        parentNav.navigate('D-License', params);
     };
 
     if (loading) {
@@ -121,10 +112,12 @@ export default function PlayerDetailScreen({ route, navigation }) {
                         <Ionicons name="person" size={50} color="#f4ea26" />
                     </View>
                 )}
-                <Text style={styles.heroName}>{player.fullName}</Text>
+                <Text style={styles.heroName}>{player.fullName || 'Unknown Player'}</Text>
                 <View style={styles.posBadge}>
                     <Text style={styles.posBadgeText}>
-                        {player.positions.join(' • ')} • {player.ageCategory || 'U20'}
+                        {(player.positions?.length ? player.positions.join(' • ') : 'No position')}
+                        {' • '}
+                        {player.ageCategory || 'U20'}
                     </Text>
                 </View>
             </View>
@@ -147,22 +140,22 @@ export default function PlayerDetailScreen({ route, navigation }) {
                 <View style={styles.infoRow}>
                     <Ionicons name="calendar" size={20} color="#f4ea26" style={styles.icon} />
                     <View>
-                        <Text style={styles.label}>Date of Birth</Text>
-                        <Text style={styles.value}>{new Date(player.dateOfBirth).toLocaleDateString()}</Text>
+                                <Text style={styles.label}>Date of Birth</Text>
+                        <Text style={styles.value}>{player.dateOfBirth ? new Date(player.dateOfBirth).toLocaleDateString() : 'N/A'}</Text>
                     </View>
                 </View>
                 <View style={styles.infoRow}>
                     <Ionicons name="calendar-outline" size={20} color="#f4ea26" style={styles.icon} />
                     <View>
                         <Text style={styles.label}>Registration Date</Text>
-                        <Text style={styles.value}>{new Date(player.registrationDate).toLocaleDateString()}</Text>
+                        <Text style={styles.value}>{player.registrationDate ? new Date(player.registrationDate).toLocaleDateString() : 'N/A'}</Text>
                     </View>
                 </View>
                 <View style={styles.infoRow}>
                     <Ionicons name="calendar" size={20} color="#f4ea26" style={styles.icon} />
                     <View>
                         <Text style={styles.label}>Joining Year</Text>
-                        <Text style={styles.value}>{player.joiningYear || new Date(player.registrationDate).getFullYear()}</Text>
+                        <Text style={styles.value}>{player.joiningYear || (player.registrationDate ? new Date(player.registrationDate).getFullYear() : 'N/A')}</Text>
                     </View>
                 </View>
                 <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
@@ -178,7 +171,7 @@ export default function PlayerDetailScreen({ route, navigation }) {
                                 textTransform: 'uppercase'
                             }
                         ]}>
-                            {player.status}
+                            {player.status || 'Unknown'}
                         </Text>
                     </View>
                 </View>
@@ -194,36 +187,31 @@ export default function PlayerDetailScreen({ route, navigation }) {
                 </LinearGradient>
             )}
 
-            {/* ID Card wrapped in ViewShot for capture */}
-            <ViewShot
-                ref={idCardRef}
-                options={{
-                    format: 'png',
-                    quality: 1.0,   // max quality for print
-                    result: 'tmpfile',
-                }}
-            >
-                <PlayerIdCard player={player} />
-            </ViewShot>
-
-            {/* Download Button */}
-            <TouchableOpacity
-                style={styles.downloadBtnBody}
-                onPress={handleDownloadIdCard}
-                activeOpacity={0.8}
-                disabled={downloading}
-            >
-                <LinearGradient colors={['#f4ea26', '#b5ad10']} style={styles.downloadGradient}>
-                    {downloading ? (
-                        <ActivityIndicator size="small" color="#0c0c0c" style={{ marginRight: 8 }} />
-                    ) : (
-                        <Ionicons name="download" size={22} color="#0c0c0c" style={{ marginRight: 8 }} />
-                    )}
-                    <Text style={styles.downloadText}>
-                        {downloading ? 'Saving...' : 'Download ID Card'}
-                    </Text>
+            <TouchableOpacity onPress={handleMatchOfficial} activeOpacity={0.8} style={styles.matchOfficialButtonWrapper}>
+                <LinearGradient colors={['#1a1a1a', '#111']} style={styles.matchOfficialButton}>
+                    <Ionicons name="gavel" size={20} color="#f4ea26" style={{ marginRight: 10 }} />
+                    <Text style={styles.matchOfficialButtonText}>Match Official</Text>
                 </LinearGradient>
             </TouchableOpacity>
+
+            <TouchableOpacity onPress={handleDLicense} activeOpacity={0.8} style={styles.matchOfficialButtonWrapper}>
+                <LinearGradient colors={['#1a1a1a', '#111']} style={styles.matchOfficialButton}>
+                    <Ionicons name="newspaper" size={20} color="#f4ea26" style={{ marginRight: 10 }} />
+                    <Text style={styles.matchOfficialButtonText}>D-License</Text>
+                </LinearGradient>
+            </TouchableOpacity>
+
+            {player.linkedReferee && (
+                <View style={styles.linkedCard}>
+                    <Text style={styles.linkedTitle}>Also registered as match official</Text>
+                    <Text style={styles.linkedName}>{player.linkedReferee.fullName}</Text>
+                    <Text style={styles.linkedSubtitle}>License: {player.linkedReferee.licenseNumber} • {player.linkedReferee.experienceYears} yrs experience</Text>
+                </View>
+            )}
+
+            <PlayerIdCard player={player} />
+
+           
 
             {player.status === 'pending' && (
                 <View style={styles.actionContainer}>
@@ -269,9 +257,14 @@ const styles = StyleSheet.create({
     passCard: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, padding: 20, borderRadius: 16, elevation: 4 },
     passLabel: { color: '#0c0c0c', fontSize: 14, fontWeight: 'bold', textTransform: 'uppercase' },
     passValue: { color: '#0c0c0c', fontSize: 26, fontWeight: '900', letterSpacing: 2 },
-    downloadBtnBody: { marginHorizontal: 20, marginTop: 16 },
-    downloadGradient: { flexDirection: 'row', padding: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center', elevation: 3 },
-    downloadText: { color: '#0c0c0c', fontWeight: '900', fontSize: 16, letterSpacing: 0.5 },
+    linkedCard: { backgroundColor: '#111', marginHorizontal: 20, padding: 18, borderRadius: 16, borderWidth: 1, borderColor: '#333', marginTop: 15 },
+    linkedTitle: { color: '#f4ea26', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 8, fontSize: 12 },
+    linkedName: { color: '#fff', fontSize: 16, fontWeight: '800' },
+    linkedSubtitle: { color: '#a1a1aa', marginTop: 4, fontSize: 13 },
+    matchOfficialButtonWrapper: { marginHorizontal: 20, marginTop: 15 },
+    matchOfficialButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 16, borderWidth: 1, borderColor: '#333' },
+    matchOfficialButtonText: { color: '#f4ea26', fontSize: 15, fontWeight: 'bold' },
+   
     actionContainer: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginTop: 10 },
     actionBtnBody: { flex: 0.48 },
     actionGradient: { flexDirection: 'row', padding: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center', elevation: 3 },

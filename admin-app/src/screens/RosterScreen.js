@@ -6,19 +6,22 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
 const POSITIONS = ['All', 'Goalkeeper', 'CB', 'LB', 'RB', 'CM', 'CDM', 'CAM', 'LW', 'RW', 'CF', 'ST'];
+const AGE_CATEGORIES = ['All', 'U13', 'U15', 'U17', 'U19', 'U20', 'SENIOR'];
 const API_URL = 'https://bifa-1.onrender.com/api';
 
 export default function RosterScreen({ navigation }) {
     const [players, setPlayers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filterPos, setFilterPos] = useState('All');
+    const [filterAge, setFilterAge] = useState('All');
 
     const loadPlayers = async () => {
         setLoading(true);
         try {
             const token = await AsyncStorage.getItem('token');
             let queryUrl = `${API_URL}/players?status=accepted`;
-            if (filterPos !== 'All') queryUrl += `&position=${filterPos}`;
+            if (filterPos !== 'All') queryUrl += `&position=${encodeURIComponent(filterPos)}`;
+            if (filterAge !== 'All') queryUrl += `&ageCategory=${encodeURIComponent(filterAge)}`;
 
             const res = await axios.get(queryUrl, { headers: { Authorization: `Bearer ${token}` } });
             setPlayers(res.data.data);
@@ -31,11 +34,11 @@ export default function RosterScreen({ navigation }) {
     useEffect(() => {
         const u = navigation.addListener('focus', () => loadPlayers());
         return u;
-    }, [navigation, filterPos]);
+    }, [navigation, filterPos, filterAge]);
 
     useEffect(() => {
         loadPlayers();
-    }, [filterPos]);
+    }, [filterPos, filterAge]);
 
     const renderItem = ({ item }) => (
         <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('PlayerDetail', { id: item._id })}>
@@ -64,7 +67,7 @@ export default function RosterScreen({ navigation }) {
 
     return (
         <View style={styles.container}>
-            <View style={styles.posScrollContainer}>
+            <View style={styles.filterContainer}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 15, alignItems: 'center' }}>
                     {POSITIONS.map(pos => (
                         <TouchableOpacity
@@ -73,6 +76,19 @@ export default function RosterScreen({ navigation }) {
                             onPress={() => setFilterPos(pos)}
                         >
                             <Text style={[styles.chipText, filterPos === pos && styles.chipTextActive]}>{pos}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            </View>
+            <View style={styles.filterContainer}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 15, alignItems: 'center' }}>
+                    {AGE_CATEGORIES.map(age => (
+                        <TouchableOpacity
+                            key={age}
+                            style={[styles.chip, filterAge === age && styles.chipActive]}
+                            onPress={() => setFilterAge(age)}
+                        >
+                            <Text style={[styles.chipText, filterAge === age && styles.chipTextActive]}>{age}</Text>
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
@@ -100,8 +116,8 @@ export default function RosterScreen({ navigation }) {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#0c0c0c' },
-    posScrollContainer: { height: 75, borderBottomWidth: 1, borderBottomColor: '#222', justifyContent: 'center', backgroundColor: '#111' },
-    chip: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 25, backgroundColor: '#1a1a1a', marginHorizontal: 6, borderWidth: 1, borderColor: '#333' },
+    filterContainer: { minHeight: 70, borderBottomWidth: 1, borderBottomColor: '#222', justifyContent: 'center', backgroundColor: '#111', paddingVertical: 10, marginBottom: 6 },
+    chip: { paddingHorizontal: 18, paddingVertical: 10, borderRadius: 22, backgroundColor: '#1a1a1a', marginHorizontal: 6, borderWidth: 1, borderColor: '#333' },
     chipActive: { backgroundColor: '#f4ea26', borderColor: '#f4ea26', elevation: 5 },
     chipText: { color: '#a1a1aa', fontWeight: 'bold', fontSize: 15 },
     chipTextActive: { color: '#0c0c0c', fontWeight: '900' },

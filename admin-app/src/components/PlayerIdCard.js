@@ -20,12 +20,25 @@ const buildHtml = (player) => {
 
     const photoHtml = player.profilePhoto
         ? `<img src="${player.profilePhoto}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;" />`
-        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:48px;">👤</div>`;
+        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#1a1a1a;">
+             <svg width="40" height="40" viewBox="0 0 24 24" fill="#f4ea26"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+           </div>`;
+
+    const iconSvg = (type) => {
+        const icons = {
+            mail:     `<svg width="14" height="14" viewBox="0 0 24 24" fill="#f4ea26"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>`,
+            call:     `<svg width="14" height="14" viewBox="0 0 24 24" fill="#f4ea26"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>`,
+            calendar: `<svg width="14" height="14" viewBox="0 0 24 24" fill="#f4ea26"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>`,
+            info:     `<svg width="14" height="14" viewBox="0 0 24 24" fill="#f4ea26"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>`,
+            ticket:   `<svg width="14" height="14" viewBox="0 0 24 24" fill="#f4ea26"><path d="M20 12c0-1.1.9-2 2-2V6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v4c1.1 0 2 .9 2 2s-.9 2-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4c-1.1 0-2-.9-2-2z"/></svg>`,
+        };
+        return icons[type] || icons.info;
+    };
 
     const accessPassHtml = player.accessPass ? `
         <div class="info-row" style="border-bottom:none;">
-            <div class="info-label">🎫 <span>Access Pass</span></div>
-            <div style="color:#f4ea26;font-size:15px;font-weight:bold;letter-spacing:1px;text-align:right;flex:2;">${player.accessPass}</div>
+            <div class="info-label">${iconSvg('ticket')} <span>Access Pass</span></div>
+            <div style="color:#f4ea26;font-size:13px;font-weight:bold;letter-spacing:1px;text-align:right;">${player.accessPass}</div>
         </div>` : '';
 
     return `<!DOCTYPE html>
@@ -33,23 +46,25 @@ const buildHtml = (player) => {
 <head>
 <meta charset="UTF-8"/>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  html {
+    background: #000000 !important;
+  }
   body {
-    background: #f0f0f0;
+    background: #000000 !important;
     font-family: Arial, sans-serif;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     min-height: 100vh;
-    padding: 20px;
+    padding: 30px 20px;
   }
   .id-card {
     width: 400px;
-    background: #0c0c0c;
+    background: #0c0c0c !important;
     border-radius: 16px;
-    border: 2.5px solid #f4ea26;
+    border: 2px solid #f4ea26;
     overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
     color: white;
   }
   .card-header {
@@ -57,15 +72,16 @@ const buildHtml = (player) => {
     flex-direction: row;
     padding: 20px;
     border-bottom: 2px solid #f4ea26;
-    background: linear-gradient(180deg, #1a1a1a, #0c0c0c);
+    background: #1a1a1a !important;
     gap: 15px;
+    align-items: center;
   }
   .player-photo {
     width: 80px;
     height: 100px;
     border-radius: 8px;
     border: 2px solid #f4ea26;
-    background: #1a1a1a;
+    background: #1a1a1a !important;
     overflow: hidden;
     flex-shrink: 0;
   }
@@ -74,30 +90,30 @@ const buildHtml = (player) => {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 4px;
+    gap: 5px;
   }
-  .player-name  { color: #fff;    font-size: 20px; font-weight: 900; letter-spacing: 0.5px; }
-  .player-pos   { color: #f4ea26; font-size: 14px; font-weight: bold; }
-  .player-cat   { color: #aaa;    font-size: 12px; }
-  .card-body    { padding: 18px 20px; }
+  .player-name { color: #fff; font-size: 20px; font-weight: 900; letter-spacing: 0.5px; }
+  .player-pos  { color: #f4ea26; font-size: 14px; font-weight: bold; }
+  .player-cat  { color: #aaa; font-size: 12px; }
+  .card-body   { padding: 16px 20px; background: #0c0c0c !important; }
   .info-row {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 9px 0;
   }
   .info-label {
     display: flex;
     align-items: center;
     color: #f4ea26;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: bold;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     flex: 1;
-    gap: 8px;
+    gap: 7px;
   }
   .value-text {
     color: #fff;
@@ -109,16 +125,11 @@ const buildHtml = (player) => {
   .card-footer {
     padding: 14px 20px;
     text-align: center;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    background: #0c0c0c;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    background: #0c0c0c !important;
   }
-  .footer-line {
-    width: 50px;
-    height: 2px;
-    background: #f4ea26;
-    margin: 0 auto 8px;
-  }
-  .footer-text    { color: #fff;    font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+  .footer-line    { width: 50px; height: 2px; background: #f4ea26 !important; margin: 0 auto 8px; }
+  .footer-text    { color: #fff; font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
   .footer-subtext { color: #f4ea26; font-size: 9px; margin-top: 3px; }
 </style>
 </head>
@@ -128,33 +139,33 @@ const buildHtml = (player) => {
       <div class="player-photo">${photoHtml}</div>
       <div class="header-info">
         <div class="player-name">${player.fullName}</div>
-        <div class="player-pos">${player.positions.join(' • ')}</div>
+        <div class="player-pos">${player.positions.join(' \u2022 ')}</div>
         <div class="player-cat">${player.ageCategory || 'U20'}</div>
       </div>
     </div>
     <div class="card-body">
       <div class="info-row">
-        <div class="info-label">📧 Email</div>
+        <div class="info-label">${iconSvg('mail')} Email</div>
         <div class="value-text">${player.email}</div>
       </div>
       <div class="info-row">
-        <div class="info-label">📞 Phone</div>
+        <div class="info-label">${iconSvg('call')} Phone</div>
         <div class="value-text">${player.phone}</div>
       </div>
       <div class="info-row">
-        <div class="info-label">📅 Date of Birth</div>
+        <div class="info-label">${iconSvg('calendar')} Date of Birth</div>
         <div class="value-text">${formatDate(player.dateOfBirth)}</div>
       </div>
       <div class="info-row">
-        <div class="info-label">📅 Registration</div>
+        <div class="info-label">${iconSvg('calendar')} Registration</div>
         <div class="value-text">${formatDate(player.registrationDate)}</div>
       </div>
       <div class="info-row">
-        <div class="info-label">📅 Joining Year</div>
+        <div class="info-label">${iconSvg('calendar')} Joining Year</div>
         <div class="value-text">${player.joiningYear || new Date(player.registrationDate).getFullYear()}</div>
       </div>
       <div class="info-row">
-        <div class="info-label">ℹ️ Status</div>
+        <div class="info-label">${iconSvg('info')} Status</div>
         <div class="value-text" style="color:${statusColor};font-weight:900;text-transform:uppercase;">${player.status}</div>
       </div>
       ${accessPassHtml}
@@ -180,6 +191,8 @@ const PlayerIdCard = ({ player }) => {
             const { uri } = await Print.printToFileAsync({
                 html: buildHtml(player),
                 base64: false,
+                width: 440,
+                height: 700,
             });
 
             // Check if sharing is available (it always is on a real device)

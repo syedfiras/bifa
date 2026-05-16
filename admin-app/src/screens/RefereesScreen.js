@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, ActivityIndicator, Alert, TextInput } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
@@ -7,12 +7,14 @@ import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 
 const API_URL = 'https://bifa-1.onrender.com/api';
 
-export default function RefereesScreen() {
+export default function RefereesScreen({ route, navigation }) {
     const [referees, setReferees] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showAdd, setShowAdd] = useState(false);
     const [editingId, setEditingId] = useState(null);
+    const [selectedRefereeId, setSelectedRefereeId] = useState(null);
     const [formData, setFormData] = useState({ fullName: '', email: '', phone: '', licenseNumber: '', experienceYears: '' });
+    const flatListRef = useRef(null);
 
     const loadReferees = async () => {
         setLoading(true);
@@ -20,6 +22,9 @@ export default function RefereesScreen() {
             const token = await AsyncStorage.getItem('token');
             const res = await axios.get(`${API_URL}/referees`, { headers: { Authorization: `Bearer ${token}` } });
             setReferees(res.data.data);
+            if (route?.params?.selectedRefereeId) {
+                setTimeout(() => scrollToReferee(route.params.selectedRefereeId, res.data.data), 100);
+            }
         } catch (e) {
             console.log(e);
         }
@@ -29,6 +34,40 @@ export default function RefereesScreen() {
     useEffect(() => {
         loadReferees();
     }, []);
+
+    const selectedRefereeIdParam = route?.params?.selectedRefereeId;
+    const openAddFormParam = route?.params?.openAddForm;
+    const prefillRefereeParam = route?.params?.prefillReferee;
+
+    useEffect(() => {
+        if (!selectedRefereeIdParam && !openAddFormParam && !prefillRefereeParam) return;
+
+        if (openAddFormParam && prefillRefereeParam) {
+            setShowAdd(true);
+            setEditingId(null);
+            setFormData({
+                fullName: prefillRefereeParam.fullName || '',
+                email: prefillRefereeParam.email || '',
+                phone: prefillRefereeParam.phone || '',
+                licenseNumber: '',
+                experienceYears: ''
+            });
+        }
+
+        if (selectedRefereeIdParam) {
+            setSelectedRefereeId(selectedRefereeIdParam);
+        }
+
+        navigation.setParams({ selectedRefereeId: undefined, openAddForm: undefined, prefillReferee: undefined });
+    }, [selectedRefereeIdParam, openAddFormParam, prefillRefereeParam]);
+
+    const scrollToReferee = (id, listData = referees) => {
+        if (!id || !flatListRef.current || listData.length === 0) return;
+        const index = listData.findIndex((item) => item._id === id);
+        if (index >= 0) {
+            flatListRef.current.scrollToIndex({ index, animated: true, viewPosition: 0.35 });
+        }
+    };
 
     const handleSave = async () => {
         try {
@@ -76,9 +115,11 @@ export default function RefereesScreen() {
         ]);
     };
 
-    const renderItem = ({ item }) => (
-        <LinearGradient colors={['#1a1a1a', '#111']} style={styles.card}>
-            <View style={styles.cardContent}>
+    const renderItem = ({ item }) => {
+        const isSelected = selectedRefereeId && item._id === selectedRefereeId;
+        return (
+            <LinearGradient colors={isSelected ? ['#292929', '#1a1a1a'] : ['#1a1a1a', '#111']} style={[styles.card, isSelected && styles.selectedCard]}>
+                <View style={styles.cardContent}>
                 <View style={[styles.avatar, { backgroundColor: '#2196F3' }]}>
                     <FontAwesome5 name="gavel" size={20} color="#0c0c0c" />
                 </View>
@@ -102,6 +143,7 @@ export default function RefereesScreen() {
             </View>
         </LinearGradient>
     );
+    };
 
     return (
         <View style={styles.container}>
@@ -123,7 +165,7 @@ export default function RefereesScreen() {
                     <TextInput style={styles.input} placeholder="Full Name" placeholderTextColor="#666" value={formData.fullName} onChangeText={t => setFormData({ ...formData, fullName: t })} />
                     <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#666" value={formData.email} onChangeText={t => setFormData({ ...formData, email: t })} autoCapitalize="none" />
                     <TextInput style={styles.input} placeholder="Phone" placeholderTextColor="#666" value={formData.phone} onChangeText={t => setFormData({ ...formData, phone: t })} />
-                    <TextInput style={styles.input} placeholder="License Number" placeholderTextColor="#666" value={formData.licenseNumber} onChangeText={t => setFormData({ ...formData, licenseNumber: t })} />
+                    <TextInput style={styles.input} placeholder="RIN Number" placeholderTextColor="#666" value={formData.licenseNumber} onChangeText={t => setFormData({ ...formData, licenseNumber: t })} />
                     <TextInput style={styles.input} placeholder="Experience Years" placeholderTextColor="#666" keyboardType="numeric" value={formData.experienceYears} onChangeText={t => setFormData({ ...formData, experienceYears: t })} />
 
                     <TouchableOpacity onPress={handleSave}>
@@ -138,11 +180,18 @@ export default function RefereesScreen() {
                 <ActivityIndicator size="large" color="#f4ea26" style={{ marginTop: 20 }} />
             ) : (
                 <FlatList
+                    ref={flatListRef}
                     data={referees}
                     keyExtractor={item => item._id}
                     renderItem={renderItem}
                     contentContainerStyle={{ paddingHorizontal: 15, paddingBottom: 20 }}
                     ListEmptyComponent={<View style={styles.empty}><FontAwesome5 name="gavel" size={30} color="#666" /><Text style={styles.emptyText}>No match officials registered.</Text></View>}
+                    onScrollToIndexFailed={({ index }) => {
+                        if (referees.length > 0) {
+                            const safeIndex = Math.min(Math.max(index, 0), referees.length - 1);
+                            flatListRef.current?.scrollToIndex({ index: safeIndex, animated: true, viewPosition: 0.35 });
+                        }
+                    }}
                 />
             )}
         </View>
@@ -161,6 +210,7 @@ const styles = StyleSheet.create({
     submitBtn: { padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 5 },
     submitBtnText: { color: '#0c0c0c', fontWeight: 'bold', letterSpacing: 1 },
     card: { marginHorizontal: 15, borderRadius: 16, marginBottom: 15, elevation: 4, borderWidth: 1, borderColor: '#333' },
+    selectedCard: { borderColor: '#f4ea26', borderWidth: 2 },
     cardContent: { padding: 15, flexDirection: 'row', alignItems: 'center' },
     avatar: { width: 45, height: 45, borderRadius: 22.5, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
     info: { flex: 1 },

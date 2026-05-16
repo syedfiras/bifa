@@ -116,7 +116,7 @@ function App() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Email Address</label>
+            <label className="form-label">Email Address (optional)</label>
             <input
               type="email"
               className="form-input"
@@ -124,7 +124,6 @@ function App() {
               placeholder="Enter your email address"
               value={formData.email}
               onChange={handleInputChange}
-              required
             />
           </div>
 

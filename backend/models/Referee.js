@@ -80,6 +80,25 @@ class Referee {
         return new RefereeQuery();
     }
 
+    static async findByContact({ email, phone }) {
+        if (!email && !phone) return null;
+        const conditions = [];
+        if (email) conditions.push(`email.eq.${email}`);
+        if (phone) conditions.push(`phone.eq.${phone}`);
+
+        const { data, error } = await supabase
+            .from(REF_TABLE)
+            .select('*')
+            .or(conditions.join(','))
+            .maybeSingle();
+
+        if (error) {
+            throw new Error(error.message);
+        }
+
+        return data ? mapRow(data) : null;
+    }
+
     static async findByIdAndUpdate(id, update) {
         const payload = {};
         if (update.fullName !== undefined) payload.full_name = update.fullName;

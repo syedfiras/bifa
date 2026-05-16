@@ -12,6 +12,7 @@ import RosterScreen from './src/screens/RosterScreen';
 import ManagePlayersScreen from './src/screens/ManagePlayersScreen';
 import PlayerDetailScreen from './src/screens/PlayerDetailScreen';
 import RefereesScreen from './src/screens/RefereesScreen';
+import DlicenseScreen from './src/screens/DlicenseScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 
 const Stack = createNativeStackNavigator();
@@ -59,6 +60,7 @@ function MainTabs({ setToken }) {
                     else if (route.name === 'Roster') iconName = 'users';
                     else if (route.name === 'Manage') iconName = 'inbox';
                     else if (route.name === 'Referees') iconName = 'gavel';
+                    else if (route.name === 'D-License') iconName = 'id-card';
                     else if (route.name === 'Settings') iconName = 'cog';
                     return <FontAwesome name={iconName} size={size} color={color} />;
                 },
@@ -68,6 +70,7 @@ function MainTabs({ setToken }) {
             <Tab.Screen name="Roster" component={RosterStack} options={{ headerShown: false }} />
             <Tab.Screen name="Manage" component={ManageStack} options={{ headerShown: false }} />
             <Tab.Screen name="Referees" component={RefereesScreen} />
+            <Tab.Screen name="D-License" component={DlicenseScreen} />
             <Tab.Screen name="Settings">
                 {props => <SettingsScreen {...props} setToken={setToken} />}
             </Tab.Screen>
