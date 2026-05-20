@@ -1,6 +1,5 @@
 require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const playerRoutes = require('./routes/players');
@@ -8,46 +7,27 @@ const refereeRoutes = require('./routes/referees');
 
 const app = express();
 
-// 1. Configured CORS explicitly to support preflight requests seamlessly
-const allowedOrigins = [
-    'http://localhost:8081',
-    'http://localhost:19006', // Common Expo web port
-];
-
+// 1. Unrestricted CORS for development and production stability
 app.use(cors({
-    origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps, curl, or Postman)
-        if (!origin) return callback(null, true);
-        
-        if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true,
+    origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// 2. Body parsers
+// 2. Request Body Parser
 app.use(express.json({ limit: '10mb' }));
 
-// 3. Database Connection
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('MongoDB Connected'))
-    .catch(err => console.log('DB error:', err));
-
-// 4. API Routes
+// 3. API Routes (Make sure these are using your Supabase client internally!)
 app.use('/api/auth', authRoutes);
 app.use('/api/players', playerRoutes);
 app.use('/api/referees', refereeRoutes);
 
+// Base route to check if server is up
 app.get('/', (req, res) => {
-    res.send('API running');
+    res.send('API running perfectly without MongoDB');
 });
 
-// 5. Global Error Handler (Prevents CORS stripping out on code crashes)
+// 4. Global Error Handler (Prevents server crashes from killing CORS response)
 app.use((err, req, res, next) => {
     console.error('Server Error:', err.stack);
     res.status(500).json({ 
