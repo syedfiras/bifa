@@ -4,7 +4,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const API_URL = 'https://bifa-1.onrender.com/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
 
 export default function LoginScreen({ setToken }) {
     const [username, setUsername] = useState('');

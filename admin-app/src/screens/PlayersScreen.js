@@ -3,7 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, ActivityI
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-const API_URL = 'https://bifa-1.onrender.com/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
 const AGE_CATEGORIES = ['All', 'U13', 'U15', 'U17', 'U19', 'U20', 'SENIOR'];
 
 export default function PlayersScreen({ navigation }) {

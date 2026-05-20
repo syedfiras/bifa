@@ -10,7 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import PlayerIdCard from '../components/PlayerIdCard';
 
-const API_URL = 'https://bifa-1.onrender.com/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
 
 export default function PlayerDetailScreen({ route, navigation }) {
     const { id } = route.params;

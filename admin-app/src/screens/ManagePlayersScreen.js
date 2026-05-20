@@ -5,7 +5,7 @@ import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
-const API_URL = 'https://bifa-1.onrender.com/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
 const AGE_CATEGORIES = ['All', 'U13', 'U15', 'U17', 'U19', 'U20', 'SENIOR'];
 
 export default function ManagePlayersScreen({ navigation }) {

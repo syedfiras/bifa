@@ -5,7 +5,7 @@ import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 
-const API_URL = 'https://bifa-1.onrender.com/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
 
 export default function RefereesScreen({ route, navigation }) {
     const [referees, setReferees] = useState([]);
