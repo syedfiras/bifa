@@ -4,6 +4,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
+import { Asset } from 'expo-asset';
 
 const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -13,7 +15,21 @@ const formatDate = (dateString) => {
     });
 };
 
-const buildHtml = (player) => {
+const getLogoBase64 = async () => {
+    try {
+        const asset = Asset.fromModule(LOGO_ASSET);
+        await asset.downloadAsync();
+        const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
+            encoding: FileSystem.EncodingType.Base64,
+        });
+        return `data:image/png;base64,${base64}`;
+    } catch (e) {
+        console.warn('Could not load logo:', e);
+        return null;
+    }
+};
+
+const buildHtml = (player, logoBase64) => {
     const statusColor =
         player.status === 'accepted' ? '#4CAF50' :
         player.status === 'declined' ? '#F44336' : '#f39c12';
@@ -24,158 +40,99 @@ const buildHtml = (player) => {
              <svg width="40" height="40" viewBox="0 0 24 24" fill="#f4ea26"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
            </div>`;
 
-    const iconSvg = (type) => {
-        const icons = {
-            mail:     `<svg width="14" height="14" viewBox="0 0 24 24" fill="#f4ea26"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>`,
-            call:     `<svg width="14" height="14" viewBox="0 0 24 24" fill="#f4ea26"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>`,
-            calendar: `<svg width="14" height="14" viewBox="0 0 24 24" fill="#f4ea26"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>`,
-            info:     `<svg width="14" height="14" viewBox="0 0 24 24" fill="#f4ea26"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>`,
-            ticket:   `<svg width="14" height="14" viewBox="0 0 24 24" fill="#f4ea26"><path d="M20 12c0-1.1.9-2 2-2V6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v4c1.1 0 2 .9 2 2s-.9 2-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4c-1.1 0-2-.9-2-2z"/></svg>`,
-        };
-        return icons[type] || icons.info;
-    };
-
     const accessPassHtml = player.accessPass ? `
-        <div class="info-row" style="border-bottom:none;">
-            <div class="info-label">${iconSvg('ticket')} <span>Access Pass</span></div>
-            <div style="color:#f4ea26;font-size:13px;font-weight:bold;letter-spacing:1px;text-align:right;">${player.accessPass}</div>
-        </div>` : '';
+      <div style="margin:10px 0 0;border-radius:6px;border:1.5px solid #f4ea26;background:rgba(244,234,38,0.08) !important;padding:10px 14px;display:flex;flex-direction:row;justify-content:space-between;align-items:center;">
+        <span style="color:#f4ea26;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;">Access Pass</span>
+        <span style="color:#f4ea26;font-size:15px;font-weight:900;letter-spacing:2px;">${player.accessPass}</span>
+      </div>` : '';
+
+    const row = (label, value, color = '#ffffff') =>
+        `<div style="display:flex;flex-direction:row;justify-content:space-between;align-items:center;padding:8px 0 8px 12px;border-bottom:1px solid rgba(244,234,38,0.12);border-left:3px solid #f4ea26;margin-bottom:4px;">
+           <span style="color:#f4ea26;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:0.8px;flex:1;">${label}</span>
+           <span style="color:${color};font-size:12px;font-weight:${color === '#ffffff' ? '500' : '900'};text-align:right;flex:2;">${value}</span>
+         </div>`;
+
+    const frontBgSvg = `
+      <svg width="400" height="640" viewBox="0 0 400 640" preserveAspectRatio="xMidYMid slice"
+           style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;">
+        <rect x="0" y="0" width="200" height="175" fill="#f4ea26" opacity="0.08"/>
+        <rect x="200" y="0" width="200" height="175" fill="#000000" opacity="0.4"/>
+        <line x1="-10" y1="40"  x2="80"  y2="-10" stroke="#f4ea26" stroke-width="0.6" opacity="0.15"/>
+        <line x1="-10" y1="70"  x2="110" y2="-10" stroke="#f4ea26" stroke-width="0.6" opacity="0.15"/>
+        <line x1="-10" y1="100" x2="140" y2="-10" stroke="#f4ea26" stroke-width="0.6" opacity="0.15"/>
+        <polyline points="0,220 40,260 10,300 55,340 20,380 60,410 30,440 70,470 0,520" fill="none" stroke="#f4ea26" stroke-width="12" stroke-linejoin="round" stroke-linecap="round" opacity="0.12"/>
+        <polyline points="400,240 360,280 390,320 345,360 380,400 340,430 370,460 330,490 400,540" fill="none" stroke="#f4ea26" stroke-width="12" stroke-linejoin="round" stroke-linecap="round" opacity="0.12"/>
+      </svg>`;
 
     return `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8"/>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  html {
-    background: #000000 !important;
-  }
-  body {
-    background: #000000 !important;
-    font-family: Arial, sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    min-height: 100vh;
-    padding: 30px 20px;
-  }
-  .id-card {
-    width: 400px;
-    background: #0c0c0c !important;
-    border-radius: 16px;
-    border: 2px solid #f4ea26;
-    overflow: hidden;
-    color: white;
-  }
-  .card-header {
-    display: flex;
-    flex-direction: row;
-    padding: 20px;
-    border-bottom: 2px solid #f4ea26;
-    background: #1a1a1a !important;
-    gap: 15px;
-    align-items: center;
-  }
-  .player-photo {
-    width: 80px;
-    height: 100px;
-    border-radius: 8px;
-    border: 2px solid #f4ea26;
-    background: #1a1a1a !important;
-    overflow: hidden;
-    flex-shrink: 0;
-  }
-  .header-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 5px;
-  }
-  .player-name { color: #fff; font-size: 20px; font-weight: 900; letter-spacing: 0.5px; }
-  .player-pos  { color: #f4ea26; font-size: 14px; font-weight: bold; }
-  .player-cat  { color: #aaa; font-size: 12px; }
-  .card-body   { padding: 16px 20px; background: #0c0c0c !important; }
-  .info-row {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-    padding: 9px 0;
-  }
-  .info-label {
-    display: flex;
-    align-items: center;
-    color: #f4ea26;
-    font-size: 11px;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    flex: 1;
-    gap: 7px;
-  }
-  .value-text {
-    color: #fff;
-    font-size: 12px;
-    font-weight: 500;
-    text-align: right;
-    flex: 2;
-  }
-  .card-footer {
-    padding: 14px 20px;
-    text-align: center;
-    border-top: 1px solid rgba(255,255,255,0.08);
-    background: #0c0c0c !important;
-  }
-  .footer-line    { width: 50px; height: 2px; background: #f4ea26 !important; margin: 0 auto 8px; }
-  .footer-text    { color: #fff; font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
-  .footer-subtext { color: #f4ea26; font-size: 9px; margin-top: 3px; }
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  html, body { background:#000000 !important; font-family:Arial,sans-serif; }
+  .page { background:#000000 !important; width:100vw; min-height:100vh; display:flex; justify-content:center; align-items:center; padding:30px 20px; }
 </style>
 </head>
 <body>
-  <div class="id-card">
-    <div class="card-header">
-      <div class="player-photo">${photoHtml}</div>
-      <div class="header-info">
-        <div class="player-name">${player.fullName}</div>
-        <div class="player-pos">${player.positions.join(' \u2022 ')}</div>
-        <div class="player-cat">${player.ageCategory || 'U20'}</div>
+
+  <div class="page">
+    <div style="width:400px;height:640px;background:#0c0c0c !important;border-radius:16px;border:2.5px solid #f4ea26;overflow:hidden;color:white;position:relative;">
+
+      ${frontBgSvg}
+
+      <div style="position:relative;z-index:1; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+        
+        <div style="display:flex;flex-direction:row;border-bottom:2.5px solid #f4ea26;overflow:hidden;">
+          <div style="background:rgba(244,234,38,0.12) !important;padding:18px 14px 18px 18px;display:flex;align-items:center;justify-content:center;border-right:1.5px solid #f4ea26;">
+            <div style="width:80px;height:100px;border-radius:8px;border:2px solid #f4ea26;overflow:hidden;background:#1a1a1a !important;">
+              ${photoHtml}
+            </div>
+          </div>
+          <div style="flex:1;padding:18px 16px;background:rgba(0,0,0,0.5) !important;display:flex;flex-direction:column;justify-content:center;gap:6px;">
+            <div style="color:#fff;font-size:18px;font-weight:900;letter-spacing:0.5px;line-height:1.2;">${player.fullName}</div>
+            <div style="color:#f4ea26;font-size:13px;font-weight:bold;letter-spacing:0.5px;">${player.positions.join(' \u2022 ')}</div>
+            <div style="display:inline-block;background:#f4ea26 !important;color:#000;font-size:10px;font-weight:900;padding:2px 8px;border-radius:4px;letter-spacing:1px;align-self:flex-start;">${player.ageCategory || 'U20'}</div>
+          </div>
+        </div>
+
+        <div style="padding:14px 18px 12px; background:rgba(0,0,0,0.6) !important; flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
+          
+          <div>
+            ${row('Email', player.email)}
+            ${row('Phone', player.phone)}
+            ${row('Date of Birth', formatDate(player.dateOfBirth))}
+            ${row('Registration', formatDate(player.registrationDate))}
+            ${row('Joining Year', String(player.joiningYear || new Date(player.registrationDate).getFullYear()))}
+            ${row('Status', player.status.toUpperCase(), statusColor)}
+            ${accessPassHtml}
+          </div>
+          
+          <div style="display: flex; flex-direction: column; align-items: flex-end; padding-right: 10px; margin-top: 15px; margin-bottom: 5px;">
+            <div style="font-family: 'Caveat', cursive; color: #f4ea26; font-size: 28px; line-height: 1; transform: rotate(-4deg); margin-bottom: -2px; letter-spacing: 1px;">
+              J. Henderson
+            </div>
+            <div style="width: 110px; height: 1px; background: rgba(244,234,38,0.5) !important; margin-bottom: 4px;"></div>
+            <div style="color: rgba(255,255,255,0.6); font-size: 8px; font-weight: bold; text-transform: uppercase; letter-spacing: 1.2px;">
+              BIFA Secretary
+            </div>
+          </div>
+
+        </div>
+
+        <div style="padding:12px 18px;display:flex;flex-direction:row;justify-content:space-between;align-items:center;border-top:2px solid #f4ea26;background:rgba(244,234,38,0.07) !important;">
+          <div style="color:#f4ea26;font-size:14px;font-weight:900;letter-spacing:3px;">BIFA</div>
+          <div style="text-align:right;">
+            <div style="color:#fff;font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:1.5px;">Player Identification</div>
+            <div style="color:#f4ea26;font-size:8px;letter-spacing:1px;margin-top:2px;">Valid ID Card</div>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="card-body">
-      <div class="info-row">
-        <div class="info-label">${iconSvg('mail')} Email</div>
-        <div class="value-text">${player.email}</div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">${iconSvg('call')} Phone</div>
-        <div class="value-text">${player.phone}</div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">${iconSvg('calendar')} Date of Birth</div>
-        <div class="value-text">${formatDate(player.dateOfBirth)}</div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">${iconSvg('calendar')} Registration</div>
-        <div class="value-text">${formatDate(player.registrationDate)}</div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">${iconSvg('calendar')} Joining Year</div>
-        <div class="value-text">${player.joiningYear || new Date(player.registrationDate).getFullYear()}</div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">${iconSvg('info')} Status</div>
-        <div class="value-text" style="color:${statusColor};font-weight:900;text-transform:uppercase;">${player.status}</div>
-      </div>
-      ${accessPassHtml}
-    </div>
-    <div class="card-footer">
-      <div class="footer-line"></div>
-      <div class="footer-text">BIFA Player Identification</div>
-      <div class="footer-subtext">Valid ID Card</div>
+
     </div>
   </div>
+
 </body>
 </html>`;
 };
@@ -186,23 +143,18 @@ const PlayerIdCard = ({ player }) => {
     const handleDownload = async () => {
         try {
             setDownloading(true);
-
-            // Generate a real PDF from the HTML
+            const logoBase64 = await getLogoBase64();
             const { uri } = await Print.printToFileAsync({
-                html: buildHtml(player),
+                html: buildHtml(player, logoBase64),
                 base64: false,
                 width: 440,
                 height: 700,
             });
-
-            // Check if sharing is available (it always is on a real device)
             const canShare = await Sharing.isAvailableAsync();
             if (!canShare) {
                 Alert.alert('Unavailable', 'Sharing is not available on this device.');
                 return;
             }
-
-            // Open the native share sheet — user can save to Files, print, WhatsApp, etc.
             await Sharing.shareAsync(uri, {
                 mimeType: 'application/pdf',
                 dialogTitle: `${player.fullName} – BIFA ID Card`,
@@ -233,10 +185,8 @@ const PlayerIdCard = ({ player }) => {
                 </TouchableOpacity>
             </View>
 
-            {/* Visual card — unchanged from your original */}
             <View style={styles.idCard}>
                 <LinearGradient colors={['#1a1a1a', '#0c0c0c']} style={StyleSheet.absoluteFillObject} />
-
                 <View style={styles.cardHeader}>
                     <View style={styles.photoContainer}>
                         {player.profilePhoto ? (
@@ -253,14 +203,13 @@ const PlayerIdCard = ({ player }) => {
                         <Text style={styles.playerCategory}>{player.ageCategory || 'U20'}</Text>
                     </View>
                 </View>
-
                 <View style={styles.cardBody}>
                     {[
-                        { icon: 'mail',               label: 'Email',        value: player.email },
-                        { icon: 'call',               label: 'Phone',        value: player.phone },
-                        { icon: 'calendar',           label: 'Date of Birth',value: formatDate(player.dateOfBirth) },
-                        { icon: 'calendar-outline',   label: 'Registration', value: formatDate(player.registrationDate) },
-                        { icon: 'calendar',           label: 'Joining Year', value: player.joiningYear || new Date(player.registrationDate).getFullYear() },
+                        { icon: 'mail',             label: 'Email',         value: player.email },
+                        { icon: 'call',             label: 'Phone',         value: player.phone },
+                        { icon: 'calendar',         label: 'Date of Birth', value: formatDate(player.dateOfBirth) },
+                        { icon: 'calendar-outline', label: 'Registration',  value: formatDate(player.registrationDate) },
+                        { icon: 'calendar',         label: 'Joining Year',  value: player.joiningYear || new Date(player.registrationDate).getFullYear() },
                     ].map(({ icon, label, value }) => (
                         <View key={label} style={styles.infoRow}>
                             <View style={styles.infoLabel}>
@@ -270,7 +219,6 @@ const PlayerIdCard = ({ player }) => {
                             <Text style={styles.valueText}>{value}</Text>
                         </View>
                     ))}
-
                     <View style={styles.infoRow}>
                         <View style={styles.infoLabel}>
                             <Ionicons name="information-circle" size={16} color="#f4ea26" />
@@ -279,11 +227,9 @@ const PlayerIdCard = ({ player }) => {
                         <Text style={[styles.valueText, {
                             color: player.status === 'accepted' ? '#4CAF50' :
                                    player.status === 'declined' ? '#F44336' : '#f39c12',
-                            textTransform: 'uppercase',
-                            fontWeight: '900'
+                            textTransform: 'uppercase', fontWeight: '900'
                         }]}>{player.status}</Text>
                     </View>
-
                     {player.accessPass && (
                         <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
                             <View style={styles.infoLabel}>
@@ -294,7 +240,6 @@ const PlayerIdCard = ({ player }) => {
                         </View>
                     )}
                 </View>
-
                 <View style={styles.cardFooter}>
                     <View style={styles.footerLine} />
                     <Text style={styles.footerText}>BIFA Player Identification</Text>
@@ -310,17 +255,13 @@ const styles = StyleSheet.create({
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
     headerTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
     downloadBtn: {
-        backgroundColor: '#f4ea26',
-        width: 40, height: 40, borderRadius: 20,
+        backgroundColor: '#f4ea26', width: 40, height: 40, borderRadius: 20,
         justifyContent: 'center', alignItems: 'center', elevation: 3,
     },
     idCard: {
-        width: '100%', aspectRatio: 0.63,
-        borderRadius: 16, overflow: 'hidden',
-        elevation: 8,
-        shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3, shadowRadius: 8,
-        borderWidth: 2, borderColor: '#f4ea26',
+        width: '100%', aspectRatio: 0.63, borderRadius: 16, overflow: 'hidden',
+        elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3, shadowRadius: 8, borderWidth: 2, borderColor: '#f4ea26',
     },
     cardHeader: { flexDirection: 'row', padding: 20, borderBottomWidth: 2, borderBottomColor: '#f4ea26' },
     photoContainer: { marginRight: 15 },

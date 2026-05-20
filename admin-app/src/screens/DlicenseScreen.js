@@ -12,7 +12,7 @@ export default function DlicenseScreen({ route, navigation }) {
     const [loading, setLoading] = useState(true);
     const [selectedRefereeId, setSelectedRefereeId] = useState(null);
     const [showAdd, setShowAdd] = useState(false);
-    const [formData, setFormData] = useState({ fullName: '', email: '', phone: '', licenseNumber: '', experienceYears: '' });
+    const [formData, setFormData] = useState({ fullName: '', email: '', phone: '', licenseNumber: '' });
     const flatListRef = React.useRef(null);
 
     const selectedDlicenseId = route?.params?.selectedDlicenseId;
@@ -30,8 +30,7 @@ export default function DlicenseScreen({ route, navigation }) {
                 fullName: prefillRefereeParam?.fullName || '',
                 email: prefillRefereeParam?.email || '',
                 phone: prefillRefereeParam?.phone || '',
-                licenseNumber: '',
-                experienceYears: ''
+                licenseNumber: ''
             });
         }
 
@@ -65,12 +64,11 @@ export default function DlicenseScreen({ route, navigation }) {
             const token = await AsyncStorage.getItem('token');
             await axios.post(`${API_URL}/referees`, {
                 ...formData,
-                experienceYears: Number(formData.experienceYears) || 0,
                 status: 'active'
             }, { headers: { Authorization: `Bearer ${token}` } });
             Alert.alert('Success', 'D-License record added.');
             setShowAdd(false);
-            setFormData({ fullName: '', email: '', phone: '', licenseNumber: '', experienceYears: '' });
+            setFormData({ fullName: '', email: '', phone: '', licenseNumber: '' });
             loadDlicenses();
         } catch (error) {
             console.log(error);
@@ -144,20 +142,12 @@ export default function DlicenseScreen({ route, navigation }) {
                         value={formData.licenseNumber}
                         onChangeText={(text) => setFormData({ ...formData, licenseNumber: text })}
                     />
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Experience Years"
-                        placeholderTextColor="#666"
-                        keyboardType="numeric"
-                        value={formData.experienceYears}
-                        onChangeText={(text) => setFormData({ ...formData, experienceYears: text })}
-                    />
                     <TouchableOpacity onPress={handleSave} style={styles.submitBtn} activeOpacity={0.85}>
                         <LinearGradient colors={['#f4ea26', '#b5ad10']} style={styles.submitGradient}>
                             <Text style={styles.submitText}>SAVE D-LICENSE</Text>
                         </LinearGradient>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => { setShowAdd(false); setFormData({ fullName: '', email: '', phone: '', licenseNumber: '', experienceYears: '' }); }} style={styles.doneBtn} activeOpacity={0.85}>
+                    <TouchableOpacity onPress={() => { setShowAdd(false); setFormData({ fullName: '', email: '', phone: '', licenseNumber: '' }); }} style={styles.doneBtn} activeOpacity={0.85}>
                         <LinearGradient colors={['#2e2e2e', '#151515']} style={styles.doneGradient}>
                             <Text style={styles.doneBtnText}>DONE</Text>
                         </LinearGradient>
@@ -208,7 +198,6 @@ export default function DlicenseScreen({ route, navigation }) {
                 </View>
             </View>
             <View style={styles.metaRow}>
-                <Text style={styles.metaText}>Experience: {item.experienceYears} yrs</Text>
                 <Text style={styles.metaText}>Status: {item.status}</Text>
             </View>
             <View style={styles.deleteRow}>

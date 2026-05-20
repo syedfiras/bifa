@@ -13,7 +13,7 @@ export default function RefereesScreen({ route, navigation }) {
     const [showAdd, setShowAdd] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [selectedRefereeId, setSelectedRefereeId] = useState(null);
-    const [formData, setFormData] = useState({ fullName: '', email: '', phone: '', licenseNumber: '', experienceYears: '' });
+    const [formData, setFormData] = useState({ fullName: '', email: '', phone: '', licenseNumber: '' });
     const flatListRef = useRef(null);
 
     const loadReferees = async () => {
@@ -49,8 +49,7 @@ export default function RefereesScreen({ route, navigation }) {
                 fullName: prefillRefereeParam.fullName || '',
                 email: prefillRefereeParam.email || '',
                 phone: prefillRefereeParam.phone || '',
-                licenseNumber: '',
-                experienceYears: ''
+                licenseNumber: ''
             });
         }
 
@@ -82,7 +81,7 @@ export default function RefereesScreen({ route, navigation }) {
             }
             setShowAdd(false);
             setEditingId(null);
-            setFormData({ fullName: '', email: '', phone: '', licenseNumber: '', experienceYears: '' });
+            setFormData({ fullName: '', email: '', phone: '', licenseNumber: '' });
             loadReferees();
         } catch (e) {
             Alert.alert('Error', e.response?.data?.message || 'Failed to save');
@@ -91,7 +90,12 @@ export default function RefereesScreen({ route, navigation }) {
     };
 
     const handleEdit = (item) => {
-        setFormData({ fullName: item.fullName, email: item.email, phone: item.phone, licenseNumber: item.licenseNumber, experienceYears: item.experienceYears.toString() });
+        setFormData({ 
+            fullName: item.fullName, 
+            email: item.email, 
+            phone: item.phone, 
+            licenseNumber: item.licenseNumber 
+        });
         setEditingId(item._id);
         setShowAdd(true);
     };
@@ -119,7 +123,7 @@ export default function RefereesScreen({ route, navigation }) {
         <View>
             <View style={styles.headerRow}>
                 <Text style={styles.heading}>Match Officials</Text>
-                <TouchableOpacity onPress={() => { setShowAdd(!showAdd); setEditingId(null); setFormData({ fullName: '', email: '', phone: '', licenseNumber: '', experienceYears: '' }); }}>
+                <TouchableOpacity onPress={() => { setShowAdd(!showAdd); setEditingId(null); setFormData({ fullName: '', email: '', phone: '', licenseNumber: '' }); }}>
                     <LinearGradient colors={['#f4ea26', '#b5ad10']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.addBtn}>
                         <Ionicons name={showAdd ? 'close' : 'add'} size={18} color="#000" />
                         <Text style={styles.addBtnText}>{showAdd ? 'CANCEL' : 'ADD NEW'}</Text>
@@ -134,14 +138,13 @@ export default function RefereesScreen({ route, navigation }) {
                     <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#666" value={formData.email} onChangeText={t => setFormData({ ...formData, email: t })} autoCapitalize="none" />
                     <TextInput style={styles.input} placeholder="Phone" placeholderTextColor="#666" value={formData.phone} onChangeText={t => setFormData({ ...formData, phone: t })} />
                     <TextInput style={styles.input} placeholder="RIN Number" placeholderTextColor="#666" value={formData.licenseNumber} onChangeText={t => setFormData({ ...formData, licenseNumber: t })} />
-                    <TextInput style={styles.input} placeholder="Experience Years" placeholderTextColor="#666" keyboardType="numeric" value={formData.experienceYears} onChangeText={t => setFormData({ ...formData, experienceYears: t })} />
 
                     <TouchableOpacity onPress={handleSave} style={styles.submitBtn} activeOpacity={0.85}>
                         <LinearGradient colors={['#f4ea26', '#b5ad10']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.submitGradient}>
                             <Text style={styles.submitBtnText}>{editingId ? 'UPDATE RECORD' : 'SAVE RECORD'}</Text>
                         </LinearGradient>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => { setShowAdd(false); setEditingId(null); setFormData({ fullName: '', email: '', phone: '', licenseNumber: '', experienceYears: '' }); }} style={styles.doneBtn} activeOpacity={0.85}>
+                    <TouchableOpacity onPress={() => { setShowAdd(false); setEditingId(null); setFormData({ fullName: '', email: '', phone: '', licenseNumber: '' }); }} style={styles.doneBtn} activeOpacity={0.85}>
                         <LinearGradient colors={['#2e2e2e', '#151515']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.doneGradient}>
                             <Text style={styles.doneBtnText}>DONE</Text>
                         </LinearGradient>
@@ -161,7 +164,7 @@ export default function RefereesScreen({ route, navigation }) {
                 </View>
                 <View style={styles.info}>
                     <Text style={styles.name}>{item.fullName}</Text>
-                    <Text style={styles.details}>RIN No. {item.licenseNumber} • {item.experienceYears} yrs</Text>
+                    <Text style={styles.details}>RIN No. {item.licenseNumber}</Text>
                 </View>
                 <View style={[styles.badge, item.status === 'active' ? styles.bgSuccess : styles.bgWarning]}>
                     <Text style={styles.badgeText}>{item.status}</Text>

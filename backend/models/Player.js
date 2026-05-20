@@ -2,6 +2,27 @@ const supabase = require('../lib/supabase');
 
 const TABLE = 'players';
 
+// Helper function to calculate age category from date of birth
+const calculateAgeCategory = (dateOfBirth) => {
+    if (!dateOfBirth) return null;
+    
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    // Adjust age if birthday hasn't occurred this year yet
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    
+    // Determine age category based on age
+    if (age < 18) return 'U18';
+    if (age < 20) return 'U20';
+    if (age < 23) return 'U23';
+    return 'Senior';
+};
+
 const mapRow = (row) => ({
     _id: row.id,
     id: row.id,
@@ -40,7 +61,8 @@ class PlayerRecord {
             .from(TABLE)
             .update({
                 status: this.status,
-                access_pass: this.accessPass
+                access_pass: this.accessPass,
+                age_category: this.ageCategory // Allow manual override
             })
             .eq('id', this.id)
             .select()
@@ -94,6 +116,12 @@ class PlayerQuery {
 
 class Player {
     static async create(payload) {
+        // Auto-calculate age category from date of birth if not provided
+        let ageCategory = payload.ageCategory;
+        if (!ageCategory && payload.dateOfBirth) {
+            ageCategory = calculateAgeCategory(payload.dateOfBirth);
+        }
+
         const basePayload = {
             full_name: payload.fullName,
             email: payload.email,
@@ -101,19 +129,20 @@ class Player {
             date_of_birth: payload.dateOfBirth,
             positions: payload.positions,
             profile_photo: payload.profilePhoto || null,
-            status: 'pending'
+            status: 'pending',
+            age_category: ageCategory // Use auto-calculated or manually provided value
         };
 
         if (payload.joiningYear !== undefined) {
             basePayload.joining_year = Number(payload.joiningYear);
         }
 
-        const withCategoryPayload = { ...basePayload, age_category: payload.ageCategory };
-        let result = await supabase.from(TABLE).insert(withCategoryPayload).select().single();
+        let result = await supabase.from(TABLE).insert(basePayload).select().single();
 
         // Backward compatibility when DB migration has not been applied yet.
         if (result.error && result.error.message.includes('age_category')) {
-            result = await supabase.from(TABLE).insert(basePayload).select().single();
+            const { age_category, ...payloadWithoutCategory } = basePayload;
+            result = await supabase.from(TABLE).insert(payloadWithoutCategory).select().single();
         }
 
         if (result.error) {
@@ -140,6 +169,15 @@ class Player {
         if (update.status !== undefined) fields.status = update.status;
         if (update.accessPass !== undefined) fields.access_pass = update.accessPass;
         if (update.profilePhoto !== undefined) fields.profile_photo = update.profilePhoto;
+        if (update.ageCategory !== undefined) fields.age_category = update.ageCategory;
+        
+        // If date of birth is being updated, auto-update age category unless explicitly provided
+        if (update.dateOfBirth !== undefined) {
+            fields.date_of_birth = update.dateOfBirth;
+            if (update.ageCategory === undefined) {
+                fields.age_category = calculateAgeCategory(update.dateOfBirth);
+            }
+        }
 
         const { data, error } = await supabase
             .from(TABLE)
@@ -166,6 +204,44 @@ class Player {
             throw new Error(error.message);
         }
         return data ? mapRow(data) : null;
+    }
+
+    // Helper method to recalculate age category for all players or a specific player
+    static async recalculateAgeCategory(playerId = null) {
+        const query = supabase.from(TABLE).select('*');
+        if (playerId) {
+            query.eq('id', playerId);
+        }
+        
+        const { data, error } = await query;
+        if (error) {
+            throw new Error(error.message);
+        }
+
+        const updates = [];
+        for (const player of data) {
+            if (player.date_of_birth) {
+                const newCategory = calculateAgeCategory(player.date_of_birth);
+                if (newCategory !== player.age_category) {
+                    updates.push({
+                        id: player.id,
+                        age_category: newCategory
+                    });
+                }
+            }
+        }
+
+        if (updates.length > 0) {
+            // Batch update
+            for (const update of updates) {
+                await supabase
+                    .from(TABLE)
+                    .update({ age_category: update.age_category })
+                    .eq('id', update.id);
+            }
+        }
+
+        return updates.length;
     }
 }
 
