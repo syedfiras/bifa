@@ -1,8 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const Player = require('../models/Player');
+const Referee = require('../models/Referee');
 const { protect } = require('../middleware/auth');
 const sendEmail = require('../utils/email');
+const { uploadPlayerPhoto, deletePlayerPhoto } = require('../utils/playerPhotos');
+const AGE_CATEGORIES = ['U13', 'U15', 'U17', 'U19', 'U20', 'SENIOR'];
 const generateAccessPass = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let pass = '';
@@ -13,12 +16,27 @@ const generateAccessPass = () => {
 };
 router.post('/register', async (req, res) => {
     try {
-        const { fullName, email, phone, dateOfBirth, positions, profilePhoto } = req.body;
+        const { fullName, email, phone, dateOfBirth, positions, profilePhoto, ageCategory, joiningYear } = req.body;
         if (!positions || positions.length === 0 || positions.length > 3) {
             return res.status(400).json({ success: false, message: 'Must select between 1 and 3 positions' });
         }
+        if (!ageCategory || !AGE_CATEGORIES.includes(ageCategory)) {
+            return res.status(400).json({ success: false, message: `ageCategory must be one of: ${AGE_CATEGORIES.join(', ')}` });
+        }
+        const parsedYear = Number(joiningYear);
+        if (!joiningYear || Number.isNaN(parsedYear) || parsedYear < 1900 || parsedYear > new Date().getFullYear()) {
+            return res.status(400).json({ success: false, message: 'joiningYear must be a valid year' });
+        }
+        const photoUrl = await uploadPlayerPhoto(profilePhoto);
         const player = await Player.create({
-            fullName, email, phone, dateOfBirth, positions, profilePhoto
+            fullName,
+            email,
+            phone,
+            dateOfBirth,
+            positions,
+            profilePhoto: photoUrl,
+            ageCategory,
+            joiningYear: parsedYear
         });
         res.status(201).json({ success: true, data: player });
     }
@@ -28,12 +46,14 @@ router.post('/register', async (req, res) => {
 });
 router.get('/', protect, async (req, res) => {
     try {
-        const { position, status } = req.query;
+        const { position, status, ageCategory } = req.query;
         let query = {};
         if (position)
             query.positions = { $in: [position] };
         if (status)
             query.status = status;
+        if (ageCategory)
+            query.ageCategory = ageCategory;
         const players = await Player.find(query).sort('-registrationDate');
         res.status(200).json({ success: true, data: players });
     }
@@ -46,7 +66,8 @@ router.get('/:id', protect, async (req, res) => {
         const player = await Player.findById(req.params.id);
         if (!player)
             return res.status(404).json({ success: false, message: 'Player not found' });
-        res.status(200).json({ success: true, data: player });
+        const linkedReferee = await Referee.findByContact({ email: player.email, phone: player.phone });
+        res.status(200).json({ success: true, data: { ...player, linkedReferee } });
     }
     catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -93,10 +114,11 @@ router.put('/:id/accept', protect, async (req, res) => {
 });
 router.put('/:id/decline', protect, async (req, res) => {
     try {
-        const player = await Player.findByIdAndUpdate(req.params.id, { status: 'declined' }, { new: true, runValidators: true });
+        const player = await Player.findByIdAndDelete(req.params.id);
         if (!player)
             return res.status(404).json({ success: false, message: 'Player not found' });
-        res.status(200).json({ success: true, data: player });
+        await deletePlayerPhoto(player.profilePhoto);
+        res.status(200).json({ success: true, data: {} });
     }
     catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -107,6 +129,7 @@ router.delete('/:id', protect, async (req, res) => {
         const player = await Player.findByIdAndDelete(req.params.id);
         if (!player)
             return res.status(404).json({ success: false, message: 'Player not found' });
+        await deletePlayerPhoto(player.profilePhoto);
         res.status(200).json({ success: true, data: {} });
     }
     catch (error) {

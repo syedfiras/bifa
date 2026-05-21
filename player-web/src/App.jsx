@@ -5,7 +5,34 @@ import './index.css';
 
 const POSITIONS = ['Goalkeeper', 'CB', 'LB', 'RB', 'CM', 'CDM', 'CAM', 'LW', 'RW', 'CF', 'ST'];
 const AGE_CATEGORIES = ['U13', 'U15', 'U17', 'U19', 'U20', 'SENIOR'];
-const API_URL = 'https://bifa-1.onrender.com/api';
+const API_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '');
+const MAX_PHOTO_SIZE = 500;
+const PHOTO_QUALITY = 0.6;
+
+const resizePhoto = (file) => new Promise((resolve, reject) => {
+  const imageUrl = URL.createObjectURL(file);
+  const image = new Image();
+
+  image.onload = () => {
+    const scale = Math.min(MAX_PHOTO_SIZE / image.width, MAX_PHOTO_SIZE / image.height, 1);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(image.width * scale);
+    canvas.height = Math.round(image.height * scale);
+
+    const context = canvas.getContext('2d');
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(imageUrl);
+
+    resolve(canvas.toDataURL('image/jpeg', PHOTO_QUALITY));
+  };
+
+  image.onerror = () => {
+    URL.revokeObjectURL(imageUrl);
+    reject(new Error('Could not process image. Please choose another photo.'));
+  };
+
+  image.src = imageUrl;
+});
 
 function App() {
   const currentYear = new Date().getFullYear();
@@ -14,28 +41,72 @@ function App() {
     email: '',
     phone: '',
     dateOfBirth: '',
-    ageCategory: 'U20',
-    joiningYear: currentYear.toString(),
+    ageCategory: '',
+    joiningYear: '', // Changed from currentYear.toString() to empty string
     positions: [],
     profilePhoto: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPhotoProcessing, setIsPhotoProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState('');
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  // Calculate age category from date of birth
+  const calculateAgeCategory = (dateOfBirth) => {
+    if (!dateOfBirth) return '';
+    
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    // Adjust age if birthday hasn't occurred this year yet
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    // Determine age category based on age
+    if (age < 13) return 'U13';
+    if (age < 15) return 'U15';
+    if (age < 17) return 'U17';
+    if (age < 19) return 'U19';
+    if (age < 20) return 'U20';
+    return 'SENIOR';
   };
 
-  const handlePhotoUpload = (e) => {
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    
+    // If date of birth changes, auto-calculate age category
+    if (name === 'dateOfBirth') {
+      const ageCategory = calculateAgeCategory(value);
+      setFormData(prev => ({ ...prev, [name]: value, ageCategory }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, profilePhoto: reader.result }));
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setError('Please upload a valid image file.');
+      e.target.value = '';
+      return;
+    }
+
+    setError('');
+    setIsPhotoProcessing(true);
+    try {
+      const compressedPhoto = await resizePhoto(file);
+      setFormData(prev => ({ ...prev, profilePhoto: compressedPhoto }));
+    } catch (err) {
+      setError(err.message);
+      setFormData(prev => ({ ...prev, profilePhoto: '' }));
+      e.target.value = '';
+    } finally {
+      setIsPhotoProcessing(false);
     }
   };
 
@@ -57,6 +128,11 @@ function App() {
 
     if (formData.positions.length === 0) {
       setError('Please select at least 1 position.');
+      return;
+    }
+
+    if (!formData.joiningYear) {
+      setError('Please enter a joining year.');
       return;
     }
 
@@ -85,7 +161,7 @@ function App() {
           </p>
           <button className="btn-primary" onClick={() => {
             setIsSuccess(false);
-            setFormData({ fullName: '', email: '', phone: '', dateOfBirth: '', ageCategory: 'U20', joiningYear: currentYear.toString(), positions: [], profilePhoto: '' });
+            setFormData({ fullName: '', email: '', phone: '', dateOfBirth: '', ageCategory: '', joiningYear: '', positions: [], profilePhoto: '' });
           }}>Register Another Player</button>
         </div>
       </div>
@@ -154,17 +230,21 @@ function App() {
 
           <div className="form-group">
             <label className="form-label">Age Category</label>
-            <select
+            <input
+              type="text"
               className="form-input"
               name="ageCategory"
               value={formData.ageCategory}
-              onChange={handleInputChange}
-              required
-            >
-              {AGE_CATEGORIES.map((category) => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-            </select>
+              readOnly
+              style={{ 
+                backgroundColor: '#f0f0f0', 
+                color: '#555',
+                cursor: 'not-allowed'
+              }}
+            />
+            <small style={{ display: 'block', marginTop: '5px', color: '#666' }}>
+              Automatically calculated from date of birth
+            </small>
           </div>
 
           <div className="form-group">
@@ -191,6 +271,11 @@ function App() {
               onChange={handlePhotoUpload}
               required
             />
+            {isPhotoProcessing && (
+              <small style={{ display: 'block', marginTop: '8px', color: '#a1a1aa' }}>
+                Optimizing photo...
+              </small>
+            )}
             {formData.profilePhoto && (
               <div style={{ marginTop: '10px' }}>
                 <img src={formData.profilePhoto} alt="Preview" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--bifa-yellow)' }} />
@@ -221,7 +306,7 @@ function App() {
 
           {error && <div className="error-text" style={{ marginBottom: '20px' }}>{error}</div>}
 
-          <button type="submit" className="btn-primary" disabled={isSubmitting}>
+          <button type="submit" className="btn-primary" disabled={isSubmitting || isPhotoProcessing}>
             {isSubmitting ? 'Submitting...' : 'Submit Registration'}
           </button>
         </form>

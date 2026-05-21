@@ -4,6 +4,7 @@ const Player = require('../models/Player');
 const Referee = require('../models/Referee');
 const { protect } = require('../middleware/auth');
 const sendEmail = require('../utils/email');
+const { uploadPlayerPhoto, deletePlayerPhoto } = require('../utils/playerPhotos');
 
 const AGE_CATEGORIES = ['U13', 'U15', 'U17', 'U19', 'U20', 'SENIOR'];
 
@@ -33,13 +34,15 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ success: false, message: 'joiningYear must be a valid year' });
         }
 
+        const photoUrl = await uploadPlayerPhoto(profilePhoto);
+
         const player = await Player.create({
             fullName,
             email,
             phone,
             dateOfBirth,
             positions,
-            profilePhoto,
+            profilePhoto: photoUrl,
             ageCategory,
             joiningYear: parsedYear
         });
@@ -119,6 +122,7 @@ router.put('/:id/decline', protect, async (req, res) => {
     try {
         const player = await Player.findByIdAndDelete(req.params.id);
         if (!player) return res.status(404).json({ success: false, message: 'Player not found' });
+        await deletePlayerPhoto(player.profilePhoto);
         res.status(200).json({ success: true, data: {} });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -129,6 +133,7 @@ router.delete('/:id', protect, async (req, res) => {
     try {
         const player = await Player.findByIdAndDelete(req.params.id);
         if (!player) return res.status(404).json({ success: false, message: 'Player not found' });
+        await deletePlayerPhoto(player.profilePhoto);
         res.status(200).json({ success: true, data: {} });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
