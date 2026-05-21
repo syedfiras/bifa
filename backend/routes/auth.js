@@ -4,13 +4,13 @@ const jwt = require('jsonwebtoken');
 const { createClient } = require('@supabase/supabase-js');
 const { protect } = require('../middleware/auth');
 
-// Initialize Supabase Client using the admin service role to read/write auth data
+// Initialize Supabase Client
 const supabase = createClient(
     process.env.SUPABASE_URL, 
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// ADMIN LOGIN ROUTE
+// ADMIN LOGIN ROUTE (WITH VISIBLE ERROR DIAGNOSTICS)
 router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -19,25 +19,42 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Please provide username and password' });
         }
 
-        // 1. Fetch admin from Supabase instead of MongoDB
+        // Clean up any trailing hidden spaces from input strings
+        const cleanUsername = username.trim();
+        const cleanPassword = password.trim();
+
+        // 1. Fetch admin from Supabase
         const { data: admin, error } = await supabase
             .from('admins')
             .select('*')
-            .eq('username', username)
+            .eq('username', cleanUsername)
             .single();
 
+        // DIAGNOSTIC CHECK 1: Did the user exist in the table?
         if (error || !admin) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Invalid credentials',
+                DIAGNOSTIC_REASON: `User "${cleanUsername}" was NOT found in your Supabase 'admins' table. Check your table editor spelling.`,
+                supabaseError: error ? error.message : null
+            });
         }
 
-        // 2. Check the password 
-        // NOTE: If you are hashing passwords (highly recommended!), use bcrypt.compareSync(password, admin.password) here instead of direct matching.
-        const isMatch = (password === admin.password); 
+        // DIAGNOSTIC CHECK 2: Does the password match exactly?
+        const isMatch = (cleanPassword === admin.password.trim()); 
         if (!isMatch) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Invalid credentials',
+                DIAGNOSTIC_REASON: `User found! But your typed password did not match the string inside your database table.`,
+                debugDetails: {
+                    youTypedLength: cleanPassword.length,
+                    dbPasswordLength: admin.password.trim().length
+                }
+            });
         }
 
-        // 3. Generate Token using Supabase ID (admin.id instead of Mongoose admin._id)
+        // 3. Generate Token using Supabase ID
         const token = jwt.sign({ id: admin.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
         
         res.status(200).json({ success: true, token });
@@ -54,7 +71,6 @@ router.put('/password', protect, async (req, res) => {
             return res.status(400).json({ success: false, message: 'Please provide current and new password' });
         }
 
-        // 1. Fetch current admin from Supabase
         const { data: admin, error: fetchError } = await supabase
             .from('admins')
             .select('*')
@@ -63,11 +79,9 @@ router.put('/password', protect, async (req, res) => {
 
         if (fetchError || !admin) return res.status(404).json({ success: false, message: 'Admin not found' });
 
-        // 2. Validate current password
         const isMatch = (currentPassword === admin.password);
         if (!isMatch) return res.status(401).json({ success: false, message: 'Current password is incorrect' });
 
-        // 3. Update password in Supabase
         const { error: updateError } = await supabase
             .from('admins')
             .update({ password: newPassword })
