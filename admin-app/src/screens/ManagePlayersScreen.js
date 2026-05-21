@@ -1,129 +1,185 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, ActivityIndicator, Image } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Animated, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { colors, spacing, radius, shadows, gradients } from '../theme';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
 const AGE_CATEGORIES = ['All', 'U13', 'U15', 'U17', 'U19', 'U20', 'SENIOR'];
 
-export default function ManagePlayersScreen({ navigation }) {
-    const [players, setPlayers] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [filterStatus, setFilterStatus] = useState('pending');
-    const [filterAgeCategory, setFilterAgeCategory] = useState('All');
+const StatusBadge = ({ status }) => {
+  const config = {
+    pending: { color: colors.orange, bg: colors.orangeDim, icon: 'time-outline' },
+    declined: { color: colors.red, bg: colors.redDim, icon: 'close-circle-outline' },
+  };
+  const c = config[status] || config.pending;
+  return (
+    <View style={[styles.badge, { backgroundColor: c.bg }]}>
+      <Ionicons name={c.icon} size={12} color={c.color} style={{ marginRight: 4 }} />
+      <Text style={[styles.badgeText, { color: c.color }]}>{status}</Text>
+    </View>
+  );
+};
 
-    const loadPlayers = async () => {
-        setLoading(true);
-        try {
-            const token = await AsyncStorage.getItem('token');
-            let queryUrl = `${API_URL}/players?status=${filterStatus}`;
-            if (filterAgeCategory !== 'All') queryUrl += `&ageCategory=${encodeURIComponent(filterAgeCategory)}`;
-            const res = await axios.get(queryUrl, { headers: { Authorization: `Bearer ${token}` } });
-            setPlayers(res.data.data);
-        } catch (e) {
-            console.log(e);
-        }
-        setLoading(false);
-    };
+const ManageCard = ({ item, onPress }) => {
+  const scale = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.spring(scale, { toValue: 1, tension: 40, friction: 9, useNativeDriver: true }).start();
+  }, []);
 
-    useEffect(() => {
-        const u = navigation.addListener('focus', () => loadPlayers());
-        return u;
-    }, [navigation, filterStatus, filterAgeCategory]);
-
-    useEffect(() => {
-        loadPlayers();
-    }, [filterStatus, filterAgeCategory]);
-
-    const renderItem = ({ item }) => (
-        <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('PlayerDetail', { id: item._id })}>
-            <LinearGradient colors={['#1a1a1a', '#111']} style={styles.card}>
-                <View style={styles.cardContent}>
-                    {item.profilePhoto ? (
-                        <Image source={{ uri: item.profilePhoto }} style={styles.avatar} />
-                    ) : (
-                        <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                            <Ionicons name="person-outline" size={20} color="#a1a1aa" />
-                        </View>
-                    )}
-                    <View style={styles.info}>
-                        <Text style={styles.name}>{item.fullName}</Text>
-                        <Text style={styles.details}>{item.positions.join(', ')} • {item.ageCategory || 'U20'}</Text>
-                    </View>
-                    <View style={[styles.badge, item.status === 'pending' ? styles.bgWarning : styles.bgDanger]}>
-                        <Text style={styles.badgeText}>{item.status}</Text>
-                    </View>
-                </View>
-            </LinearGradient>
-        </TouchableOpacity>
-    );
-
-    return (
-        <View style={styles.container}>
-            <LinearGradient colors={['#1a1a1a', '#0c0c0c']} style={StyleSheet.absoluteFillObject} />
-
-            <View style={styles.filterContainer}>
-                <TouchableOpacity style={[styles.filterBtn, filterStatus === 'pending' && styles.filterActive]} onPress={() => setFilterStatus('pending')}>
-                    <Text style={[styles.filterText, filterStatus === 'pending' && styles.filterTextActive]}>Pending Approvals</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.filterBtn, filterStatus === 'declined' && styles.filterActive]} onPress={() => setFilterStatus('declined')}>
-                    <Text style={[styles.filterText, filterStatus === 'declined' && styles.filterTextActive]}>Declined</Text>
-                </TouchableOpacity>
-            </View>
-
-            <View style={styles.ageFilterContainer}>
-                {AGE_CATEGORIES.map((category) => (
-                    <TouchableOpacity
-                        key={category}
-                        style={[styles.ageChip, filterAgeCategory === category && styles.ageChipActive]}
-                        onPress={() => setFilterAgeCategory(category)}
-                    >
-                        <Text style={[styles.ageChipText, filterAgeCategory === category && styles.ageChipTextActive]}>{category}</Text>
-                    </TouchableOpacity>
-                ))}
-            </View>
-
-            {loading ? (
-                <ActivityIndicator size="large" color="#f4ea26" style={{ marginTop: 20 }} />
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <TouchableOpacity activeOpacity={0.75} onPress={onPress}>
+        <LinearGradient colors={gradients.card} style={styles.card}>
+          <View style={styles.cardContent}>
+            {item.profilePhoto ? (
+              <Image source={{ uri: item.profilePhoto }} style={styles.avatar} />
             ) : (
-                <FlatList
-                    data={players}
-                    keyExtractor={item => item._id}
-                    renderItem={renderItem}
-                    contentContainerStyle={styles.list}
-                    ListEmptyComponent={<View style={styles.empty}><Ionicons name="file-tray" size={40} color="#666" /><Text style={styles.emptyText}>No {filterStatus} applications.</Text></View>}
-                />
+              <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                <Ionicons name="person-outline" size={20} color={colors.textSecondary} />
+              </View>
             )}
+            <View style={styles.info}>
+              <Text style={styles.name} numberOfLines={1}>{item.fullName}</Text>
+              <Text style={styles.details}>
+                {(item.positions || []).join(', ')} <Text style={{ color: colors.yellow }}>•</Text> {item.ageCategory || 'U20'}
+              </Text>
+            </View>
+            <StatusBadge status={item.status} />
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
+
+export default function ManagePlayersScreen({ navigation }) {
+  const [players, setPlayers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState('pending');
+  const [filterAgeCategory, setFilterAgeCategory] = useState('All');
+
+  const loadPlayers = async () => {
+    setLoading(true);
+    try {
+      const token = await AsyncStorage.getItem('token');
+      let queryUrl = `${API_URL}/players?status=${filterStatus}`;
+      if (filterAgeCategory !== 'All') queryUrl += `&ageCategory=${encodeURIComponent(filterAgeCategory)}`;
+      const res = await axios.get(queryUrl, { headers: { Authorization: `Bearer ${token}` } });
+      setPlayers(res.data.data);
+    } catch (e) { console.log(e); }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    const u = navigation.addListener('focus', () => loadPlayers());
+    return u;
+  }, [navigation, filterStatus, filterAgeCategory]);
+
+  useEffect(() => { loadPlayers(); }, [filterStatus, filterAgeCategory]);
+
+  return (
+    <View style={styles.container}>
+      <LinearGradient colors={gradients.bg} style={StyleSheet.absoluteFillObject} />
+
+      <View style={styles.toggleContainer}>
+        <TouchableOpacity
+          style={[styles.toggleBtn, filterStatus === 'pending' && styles.toggleActive]}
+          onPress={() => setFilterStatus('pending')}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="time-outline" size={16} color={filterStatus === 'pending' ? colors.textDark : colors.textSecondary} style={{ marginRight: 6 }} />
+          <Text style={[styles.toggleText, filterStatus === 'pending' && styles.toggleTextActive]}>Pending</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.toggleBtn, filterStatus === 'declined' && styles.toggleActive]}
+          onPress={() => setFilterStatus('declined')}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="close-circle-outline" size={16} color={filterStatus === 'declined' ? colors.textDark : colors.textSecondary} style={{ marginRight: 6 }} />
+          <Text style={[styles.toggleText, filterStatus === 'declined' && styles.toggleTextActive]}>Declined</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.ageRow} contentContainerStyle={styles.ageContent}>
+        {AGE_CATEGORIES.map(category => (
+          <TouchableOpacity
+            key={category}
+            style={[styles.ageChip, filterAgeCategory === category && styles.ageChipActive]}
+            onPress={() => setFilterAgeCategory(category)}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.ageChipText, filterAgeCategory === category && styles.ageChipTextActive]}>{category}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {loading ? (
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color={colors.yellow} />
         </View>
-    );
+      ) : (
+        <FlatList
+          data={players}
+          keyExtractor={item => item._id}
+          renderItem={({ item }) => (
+            <ManageCard item={item} onPress={() => navigation.navigate('PlayerDetail', { id: item._id })} />
+          )}
+          contentContainerStyle={styles.list}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <View style={styles.emptyIconWrap}>
+                <Ionicons name="file-tray-outline" size={32} color={colors.textMuted} />
+              </View>
+              <Text style={styles.emptyTitle}>No {filterStatus} applications</Text>
+              <Text style={styles.emptySub}>All clear for this category</Text>
+            </View>
+          }
+        />
+      )}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#0c0c0c' },
-    filterContainer: { flexDirection: 'row', justifyContent: 'center', paddingVertical: 20, borderBottomWidth: 1, borderBottomColor: '#222', backgroundColor: '#111' },
-    filterBtn: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 25, backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: '#333', marginHorizontal: 10 },
-    filterActive: { backgroundColor: '#f4ea26', borderColor: '#f4ea26', shadowColor: '#f4ea26', shadowOpacity: 0.2, shadowRadius: 10, elevation: 4 },
-    filterText: { color: '#a1a1aa', fontWeight: 'bold' },
-    filterTextActive: { color: '#0c0c0c', fontWeight: '900' },
-    ageFilterContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#222', backgroundColor: '#111' },
-    ageChip: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 18, backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: '#333', margin: 4 },
-    ageChipActive: { backgroundColor: '#f4ea26', borderColor: '#f4ea26' },
-    ageChipText: { color: '#a1a1aa', fontWeight: '700', fontSize: 12 },
-    ageChipTextActive: { color: '#0c0c0c' },
-    list: { paddingHorizontal: 15, paddingTop: 15, paddingBottom: 25 },
-    card: { borderRadius: 16, marginBottom: 12, elevation: 3, borderWidth: 1, borderColor: '#333' },
-    cardContent: { padding: 15, flexDirection: 'row', alignItems: 'center' },
-    avatar: { width: 50, height: 50, borderRadius: 25, marginRight: 15 },
-    avatarPlaceholder: { backgroundColor: '#222', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#333' },
-    info: { flex: 1 },
-    name: { color: '#fff', fontSize: 17, fontWeight: 'bold' },
-    details: { color: '#a1a1aa', marginTop: 4, fontSize: 13 },
-    badge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
-    badgeText: { color: '#fff', fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase' },
-    bgWarning: { backgroundColor: '#f39c12' },
-    bgDanger: { backgroundColor: '#F44336' },
-    empty: { alignItems: 'center', marginTop: 60 },
-    emptyText: { color: '#666', fontSize: 16, marginTop: 15, fontWeight: '600' }
+  container: { flex: 1 },
+  toggleContainer: {
+    flexDirection: 'row', justifyContent: 'center', paddingVertical: spacing.lg,
+    borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.bgCard,
+    gap: spacing.md,
+  },
+  toggleBtn: {
+    flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, paddingHorizontal: spacing.xl,
+    borderRadius: radius.full, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border,
+  },
+  toggleActive: { backgroundColor: colors.yellow, borderColor: colors.yellow },
+  toggleText: { color: colors.textSecondary, fontWeight: '700', fontSize: 13 },
+  toggleTextActive: { color: colors.textDark },
+  ageRow: { maxHeight: 48, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.bgCard },
+  ageContent: { paddingHorizontal: spacing.lg, alignItems: 'center', paddingVertical: spacing.sm },
+  ageChip: {
+    paddingVertical: spacing.xs, paddingHorizontal: spacing.md,
+    borderRadius: radius.full, backgroundColor: colors.bg, borderWidth: 1,
+    borderColor: colors.border, marginRight: spacing.sm,
+  },
+  ageChipActive: { backgroundColor: colors.yellow, borderColor: colors.yellow },
+  ageChipText: { color: colors.textSecondary, fontWeight: '700', fontSize: 12 },
+  ageChipTextActive: { color: colors.textDark },
+  loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  list: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.xxl },
+  card: { borderRadius: radius.lg, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', ...shadows.md },
+  cardContent: { padding: spacing.lg, flexDirection: 'row', alignItems: 'center' },
+  avatar: { width: 48, height: 48, borderRadius: 24, marginRight: spacing.md },
+  avatarPlaceholder: { backgroundColor: colors.bgCard, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+  info: { flex: 1 },
+  name: { color: colors.text, fontSize: 16, fontWeight: '700' },
+  details: { color: colors.textSecondary, marginTop: 2, fontSize: 12 },
+  badge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full },
+  badgeText: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase' },
+  empty: { alignItems: 'center', marginTop: 60 },
+  emptyIconWrap: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.bgCard, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.lg },
+  emptyTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
+  emptySub: { color: colors.textMuted, fontSize: 13, marginTop: spacing.xs },
 });
