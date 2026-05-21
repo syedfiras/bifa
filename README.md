@@ -5,7 +5,7 @@ A full-stack club management system with a public registration portal, backend A
 ## Folder Structure
 - `/backend`: Node.js, Express, Supabase (PostgreSQL)
 - `/player-web`: React.js (Vite) Registration site
-- `/admin-app`: React Native (Expo) Admin Mobile App
+- `/admin-app`: React Native (Expo) BIFA Admin Mobile App
 
 ## 1. Backend Setup
 1. CD into the backend: `cd backend`

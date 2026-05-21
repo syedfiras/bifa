@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "admin-app",
-    "slug": "admin-app",
+    "name": "BIFA",
+    "slug": "bifa",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/splash-icon.png",
-    "scheme": "adminapp",
+    "scheme": "bifa",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -38,7 +38,8 @@
           }
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
