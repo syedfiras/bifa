@@ -177,6 +177,24 @@ body {
   cursor: not-allowed;
 }
 
+.btn-secondary {
+  width: 100%;
+  padding: 14px 12px;
+  background-color: var(--bifa-light-gray);
+  color: var(--text-white);
+  border: 1px solid rgba(244, 234, 38, 0.45);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  border-color: var(--bifa-yellow);
+  background-color: #383838;
+}
+
 .error-text {
   color: #ff4d4f;
   font-size: 0.85rem;

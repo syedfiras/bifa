@@ -7,6 +7,8 @@ import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 import { Asset } from 'expo-asset';
 
+const SIGNATURE_ASSET = require('../../assets/images/signbifa.png');
+
 const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
         year: 'numeric',
@@ -15,21 +17,21 @@ const formatDate = (dateString) => {
     });
 };
 
-const getLogoBase64 = async () => {
+const getAssetBase64 = async (assetModule, label) => {
     try {
-        const asset = Asset.fromModule(LOGO_ASSET);
+        const asset = Asset.fromModule(assetModule);
         await asset.downloadAsync();
         const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
-            encoding: FileSystem.EncodingType.Base64,
+            encoding: 'base64',
         });
         return `data:image/png;base64,${base64}`;
     } catch (e) {
-        console.warn('Could not load logo:', e);
+        console.warn(`Could not load ${label}:`, e);
         return null;
     }
 };
 
-const buildHtml = (player, logoBase64) => {
+const buildHtml = (player, signatureBase64) => {
     const statusColor =
         player.status === 'accepted' ? '#4CAF50' :
         player.status === 'declined' ? '#F44336' : '#f39c12';
@@ -68,7 +70,6 @@ const buildHtml = (player, logoBase64) => {
 <html>
 <head>
 <meta charset="UTF-8"/>
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
 <style>
   * { box-sizing:border-box; margin:0; padding:0; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
   html, body { background:#000000 !important; font-family:Arial,sans-serif; }
@@ -109,10 +110,11 @@ const buildHtml = (player, logoBase64) => {
             ${accessPassHtml}
           </div>
           
-          <div style="display: flex; flex-direction: column; align-items: flex-end; padding-right: 10px; margin-top: 15px; margin-bottom: 5px;">
-            <div style="font-family: 'Caveat', cursive; color: #f4ea26; font-size: 28px; line-height: 1; transform: rotate(-4deg); margin-bottom: -2px; letter-spacing: 1px;">
-              J. Henderson
-            </div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; padding-right: 10px; margin-top: 24px; margin-bottom: 0;">
+            ${signatureBase64
+                ? `<img src="${signatureBase64}" style="width:120px;height:48px;object-fit:contain;margin-bottom:-3px;" />`
+                : `<div style="width:120px;height:48px;"></div>`
+            }
             <div style="width: 110px; height: 1px; background: rgba(244,234,38,0.5) !important; margin-bottom: 4px;"></div>
             <div style="color: rgba(255,255,255,0.6); font-size: 8px; font-weight: bold; text-transform: uppercase; letter-spacing: 1.2px;">
               BIFA Secretary
@@ -143,9 +145,9 @@ const PlayerIdCard = ({ player }) => {
     const handleDownload = async () => {
         try {
             setDownloading(true);
-            const logoBase64 = await getLogoBase64();
+            const signatureBase64 = await getAssetBase64(SIGNATURE_ASSET, 'signature');
             const { uri } = await Print.printToFileAsync({
-                html: buildHtml(player, logoBase64),
+                html: buildHtml(player, signatureBase64),
                 base64: false,
                 width: 440,
                 height: 700,
@@ -240,6 +242,11 @@ const PlayerIdCard = ({ player }) => {
                         </View>
                     )}
                 </View>
+                <View style={styles.signatureBlock}>
+                    <Image source={SIGNATURE_ASSET} style={styles.signatureImage} resizeMode="contain" />
+                    <View style={styles.signatureLine} />
+                    <Text style={styles.signatureLabel}>BIFA Secretary</Text>
+                </View>
                 <View style={styles.cardFooter}>
                     <View style={styles.footerLine} />
                     <Text style={styles.footerText}>BIFA Player Identification</Text>
@@ -285,6 +292,10 @@ const styles = StyleSheet.create({
     labelText: { color: '#f4ea26', fontSize: 12, fontWeight: '600', marginLeft: 8, textTransform: 'uppercase' },
     valueText: { color: '#fff', fontSize: 12, fontWeight: '500', flex: 2, textAlign: 'right' },
     passText: { color: '#f4ea26', fontSize: 14, fontWeight: 'bold', letterSpacing: 1, flex: 2, textAlign: 'right' },
+    signatureBlock: { alignItems: 'flex-end', paddingHorizontal: 20, paddingBottom: 6, marginTop: 8 },
+    signatureImage: { width: 120, height: 48 },
+    signatureLine: { width: 110, height: 1, backgroundColor: 'rgba(244,234,38,0.5)', marginTop: -2, marginBottom: 4 },
+    signatureLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 8, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1.2 },
     cardFooter: { padding: 15, alignItems: 'center', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)' },
     footerLine: { width: 50, height: 2, backgroundColor: '#f4ea26', marginBottom: 8 },
     footerText: { color: '#fff', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1 },

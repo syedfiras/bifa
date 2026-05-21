@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import axios from 'axios';
 import logo from './assets/logo.png';
 import './index.css';
@@ -36,6 +36,8 @@ const resizePhoto = (file) => new Promise((resolve, reject) => {
 
 function App() {
   const currentYear = new Date().getFullYear();
+  const galleryInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -265,12 +267,37 @@ function App() {
           <div className="form-group">
             <label className="form-label">Profile Photo</label>
             <input
+              ref={galleryInputRef}
               type="file"
-              className="form-input"
+              style={{ display: 'none' }}
               accept="image/*"
               onChange={handlePhotoUpload}
               required
             />
+            <input
+              ref={cameraInputRef}
+              type="file"
+              style={{ display: 'none' }}
+              accept="image/*"
+              capture="environment"
+              onChange={handlePhotoUpload}
+            />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => galleryInputRef.current?.click()}
+              >
+                Choose Photo
+              </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => cameraInputRef.current?.click()}
+              >
+                Open Camera
+              </button>
+            </div>
             {isPhotoProcessing && (
               <small style={{ display: 'block', marginTop: '8px', color: '#a1a1aa' }}>
                 Optimizing photo...

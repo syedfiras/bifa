@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, ActivityIndicator, ScrollView, Image } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, ActivityIndicator, ScrollView, Image, TextInput } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -14,6 +14,7 @@ export default function RosterScreen({ navigation }) {
     const [loading, setLoading] = useState(true);
     const [filterPos, setFilterPos] = useState('All');
     const [filterAge, setFilterAge] = useState('All');
+    const [searchQuery, setSearchQuery] = useState('');
 
     const loadPlayers = async () => {
         setLoading(true);
@@ -39,6 +40,25 @@ export default function RosterScreen({ navigation }) {
     useEffect(() => {
         loadPlayers();
     }, [filterPos, filterAge]);
+
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+    const filteredPlayers = normalizedSearch
+        ? players.filter((player) => {
+            const searchableText = [
+                player.fullName,
+                player.phone,
+                player.email,
+                player.accessPass,
+                player.ageCategory,
+                ...(player.positions || [])
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+
+            return searchableText.includes(normalizedSearch);
+        })
+        : players;
 
     const renderItem = ({ item }) => (
         <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('PlayerDetail', { id: item._id })}>
@@ -67,6 +87,24 @@ export default function RosterScreen({ navigation }) {
 
     return (
         <View style={styles.container}>
+            <View style={styles.searchContainer}>
+                <Ionicons name="search" size={20} color="#777" style={styles.searchIcon} />
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search roster"
+                    placeholderTextColor="#777"
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                />
+                {searchQuery ? (
+                    <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearSearchBtn}>
+                        <Ionicons name="close-circle" size={20} color="#777" />
+                    </TouchableOpacity>
+                ) : null}
+            </View>
+
             <View style={styles.filterContainer}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 15, alignItems: 'center' }}>
                     {POSITIONS.map(pos => (
@@ -98,7 +136,7 @@ export default function RosterScreen({ navigation }) {
                 <ActivityIndicator size="large" color="#f4ea26" style={{ marginTop: 30 }} />
             ) : (
                 <FlatList
-                    data={players}
+                    data={filteredPlayers}
                     keyExtractor={item => item._id}
                     renderItem={renderItem}
                     contentContainerStyle={styles.list}
@@ -116,6 +154,10 @@ export default function RosterScreen({ navigation }) {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#0c0c0c' },
+    searchContainer: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 15, marginTop: 14, marginBottom: 8, paddingHorizontal: 14, height: 48, borderRadius: 14, backgroundColor: '#151515', borderWidth: 1, borderColor: '#2a2a2a' },
+    searchIcon: { marginRight: 10 },
+    searchInput: { flex: 1, color: '#fff', fontSize: 15, fontWeight: '600', paddingVertical: 0 },
+    clearSearchBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
     filterContainer: { minHeight: 70, borderBottomWidth: 1, borderBottomColor: '#222', justifyContent: 'center', backgroundColor: '#111', paddingVertical: 10, marginBottom: 6 },
     chip: { paddingHorizontal: 18, paddingVertical: 10, borderRadius: 22, backgroundColor: '#1a1a1a', marginHorizontal: 6, borderWidth: 1, borderColor: '#333' },
     chipActive: { backgroundColor: '#f4ea26', borderColor: '#f4ea26', elevation: 5 },
