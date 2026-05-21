@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt'); // 1. Import bcrypt
+const bcrypt = require('bcryptjs'); 
 const { createClient } = require('@supabase/supabase-js');
 const { protect } = require('../middleware/auth');
 
