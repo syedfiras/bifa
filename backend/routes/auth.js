@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt'); // 1. Import bcrypt
 const { createClient } = require('@supabase/supabase-js');
 const { protect } = require('../middleware/auth');
 
@@ -10,7 +11,7 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// ADMIN LOGIN ROUTE (WITH VISIBLE ERROR DIAGNOSTICS)
+// ADMIN LOGIN ROUTE
 router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -19,7 +20,6 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Please provide username and password' });
         }
 
-        // Clean up any trailing hidden spaces from input strings
         const cleanUsername = username.trim();
         const cleanPassword = password.trim();
 
@@ -30,28 +30,14 @@ router.post('/login', async (req, res) => {
             .eq('username', cleanUsername)
             .single();
 
-        // DIAGNOSTIC CHECK 1: Did the user exist in the table?
         if (error || !admin) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Invalid credentials',
-                DIAGNOSTIC_REASON: `User "${cleanUsername}" was NOT found in your Supabase 'admins' table. Check your table editor spelling.`,
-                supabaseError: error ? error.message : null
-            });
+            return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
-        // DIAGNOSTIC CHECK 2: Does the password match exactly?
-        const isMatch = (cleanPassword === admin.password.trim()); 
+        // 2. Use bcrypt to compare the typed password with the 60-character database hash
+        const isMatch = await bcrypt.compare(cleanPassword, admin.password.trim()); 
         if (!isMatch) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Invalid credentials',
-                DIAGNOSTIC_REASON: `User found! But your typed password did not match the string inside your database table.`,
-                debugDetails: {
-                    youTypedLength: cleanPassword.length,
-                    dbPasswordLength: admin.password.trim().length
-                }
-            });
+            return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
         // 3. Generate Token using Supabase ID
@@ -79,12 +65,17 @@ router.put('/password', protect, async (req, res) => {
 
         if (fetchError || !admin) return res.status(404).json({ success: false, message: 'Admin not found' });
 
-        const isMatch = (currentPassword === admin.password);
+        // Use bcrypt here too for updating passwords!
+        const isMatch = await bcrypt.compare(currentPassword, admin.password);
         if (!isMatch) return res.status(401).json({ success: false, message: 'Current password is incorrect' });
+
+        // Hash the new password before storing it back to Supabase
+        const salt = await bcrypt.genSalt(10);
+        const hashedNewPassword = await bcrypt.hash(newPassword, salt);
 
         const { error: updateError } = await supabase
             .from('admins')
-            .update({ password: newPassword })
+            .update({ password: hashedNewPassword })
             .eq('id', req.adminId);
 
         if (updateError) throw updateError;
