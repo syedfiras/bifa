@@ -13,7 +13,7 @@ create table if not exists public.admins (
 create table if not exists public.players (
     id uuid primary key default gen_random_uuid(),
     full_name text not null,
-    email text not null unique,
+    email text unique,
     phone text not null,
     date_of_birth date not null,
     positions text[] not null check (array_length(positions, 1) between 1 and 3),

@@ -124,7 +124,7 @@ class Player {
 
         const basePayload = {
             full_name: payload.fullName,
-            email: payload.email,
+            email: payload.email || null,
             phone: payload.phone,
             date_of_birth: payload.dateOfBirth,
             positions: payload.positions,

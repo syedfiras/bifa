@@ -38,7 +38,7 @@ router.post('/register', async (req, res) => {
 
         const player = await Player.create({
             fullName,
-            email,
+            email: email || null,
             phone,
             dateOfBirth,
             positions,
@@ -91,7 +91,8 @@ router.put('/:id/accept', protect, async (req, res) => {
         await player.save();
 
         try {
-            const htmlMsg = `
+            if (player.email) {
+                const htmlMsg = `
         <div style="font-family: Arial, sans-serif; background-color: #f4ea26; padding: 20px; color: #000;">
           <div style="background-color: #000; padding: 20px; border-radius: 8px;">
             <h1 style="color: #f4ea26; text-align: center;">Welcome to BIFA Football Club!</h1>
@@ -107,7 +108,8 @@ router.put('/:id/accept', protect, async (req, res) => {
           </div>
         </div>
       `;
-            await sendEmail({ email: player.email, subject: 'Welcome to BIFA - Access Pass', html: htmlMsg });
+                await sendEmail({ email: player.email, subject: 'Welcome to BIFA - Access Pass', html: htmlMsg });
+            }
         } catch (e) {
             console.log('Email delivery failed:', e.message);
         }
