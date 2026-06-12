@@ -40,7 +40,9 @@
         }
       ],
       "expo-asset",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-font",
+      "expo-router"
     ],
     "experiments": {
       "typedRoutes": true,
