@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,
-  Alert, ScrollView, Image, Animated
+  Alert, ScrollView, Image, Animated, Platform
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
@@ -28,6 +28,7 @@ export default function PlayerDetailScreen({ route, navigation }) {
   const { id } = route.params;
   const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const headerAnim = useRef(new Animated.Value(0)).current;
 
   const loadPlayer = async () => {
@@ -48,17 +49,46 @@ export default function PlayerDetailScreen({ route, navigation }) {
 
   const handleAccept = async () => {
     try {
-      setLoading(true);
+      setSubmitting(true);
       const token = await AsyncStorage.getItem('token');
       const routeUrl = `${API_URL}/players/${id}/accept`;
       await axios.put(routeUrl, {}, { headers: { Authorization: `Bearer ${token}` } });
-      setLoading(false);
       Alert.alert('Success', 'Player has been approved.');
       navigation.goBack();
     } catch (e) {
-      setLoading(false);
       Alert.alert('Error', e.response?.data?.message || 'Something went wrong');
+    } finally {
+      setSubmitting(false);
     }
+  };
+
+  const handleDecline = async () => {
+    const deletePlayer = async () => {
+      try {
+        setSubmitting(true);
+        const token = await AsyncStorage.getItem('token');
+        await axios.put(`${API_URL}/players/${id}/decline`, {}, { headers: { Authorization: `Bearer ${token}` } });
+        Alert.alert('Success', 'Player has been deleted.');
+        navigation.goBack();
+      } catch (e) {
+        console.error('Delete error:', e.response?.data || e.message);
+        Alert.alert('Error', e.response?.data?.message || 'Something went wrong');
+      } finally {
+        setSubmitting(false);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Delete this player? This action cannot be undone.')) {
+        deletePlayer();
+      }
+      return;
+    }
+
+    Alert.alert('Delete Player', 'Are you sure you want to delete this player? This action cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: deletePlayer }
+    ]);
   };
 
   const handleMatchOfficial = () => {
@@ -187,11 +217,31 @@ export default function PlayerDetailScreen({ route, navigation }) {
           <TouchableOpacity
             style={{ flex: 1 }}
             onPress={handleAccept}
+            disabled={submitting}
             activeOpacity={0.8}
           >
-            <LinearGradient colors={gradients.greenBtn} style={styles.actionBtn}>
-              <Ionicons name="checkmark-circle" size={20} color={colors.text} style={{ marginRight: spacing.sm }} />
-              <Text style={styles.actionBtnText}>Approve</Text>
+            <LinearGradient colors={submitting ? ['rgba(52,211,153,0.5)', 'rgba(16,185,129,0.5)'] : gradients.greenBtn} style={styles.actionBtn}>
+              {submitting ? (
+                <ActivityIndicator size="small" color={colors.text} style={{ marginRight: spacing.sm }} />
+              ) : (
+                <Ionicons name="checkmark-circle" size={20} color={colors.text} style={{ marginRight: spacing.sm }} />
+              )}
+              <Text style={styles.actionBtnText}>{submitting ? 'Processing...' : 'Approve'}</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{ flex: 1 }}
+            onPress={handleDecline}
+            disabled={submitting}
+            activeOpacity={0.8}
+          >
+            <LinearGradient colors={submitting ? ['rgba(239,68,68,0.5)', 'rgba(220,38,38,0.5)'] : gradients.redBtn} style={styles.actionBtn}>
+              {submitting ? (
+                <ActivityIndicator size="small" color={colors.text} style={{ marginRight: spacing.sm }} />
+              ) : (
+                <Ionicons name="close-circle" size={20} color={colors.text} style={{ marginRight: spacing.sm }} />
+              )}
+              <Text style={styles.actionBtnText}>{submitting ? 'Processing...' : 'Decline'}</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>

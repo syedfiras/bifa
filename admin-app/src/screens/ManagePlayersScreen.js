@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Animated, ScrollView, Modal } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Animated, ScrollView, Modal, Alert, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -58,7 +58,7 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-const ManageCard = ({ item, onPress }) => {
+const ManageCard = ({ item, onPress, onDecline }) => {
   const scale = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.spring(scale, { toValue: 1, tension: 40, friction: 9, useNativeDriver: true }).start();
@@ -66,26 +66,32 @@ const ManageCard = ({ item, onPress }) => {
 
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
-      <TouchableOpacity activeOpacity={0.75} onPress={onPress}>
-        <LinearGradient colors={gradients.card} style={styles.card}>
-          <View style={styles.cardContent}>
-            {item.profilePhoto ? (
-              <Image source={{ uri: item.profilePhoto }} style={styles.avatar} />
-            ) : (
-              <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                <Ionicons name="person-outline" size={20} color={colors.textSecondary} />
+      <View>
+        <TouchableOpacity activeOpacity={0.75} onPress={onPress}>
+          <LinearGradient colors={gradients.card} style={styles.card}>
+            <View style={styles.cardContent}>
+              {item.profilePhoto ? (
+                <Image source={{ uri: item.profilePhoto }} style={styles.avatar} />
+              ) : (
+                <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                  <Ionicons name="person-outline" size={20} color={colors.textSecondary} />
+                </View>
+              )}
+              <View style={styles.info}>
+                <Text style={styles.name} numberOfLines={1}>{item.fullName}</Text>
+                <Text style={styles.details}>
+                  {(item.positions || []).join(', ')} <Text style={{ color: colors.yellow }}>•</Text> {item.ageCategory || 'U20'}
+                </Text>
               </View>
-            )}
-            <View style={styles.info}>
-              <Text style={styles.name} numberOfLines={1}>{item.fullName}</Text>
-              <Text style={styles.details}>
-                {(item.positions || []).join(', ')} <Text style={{ color: colors.yellow }}>•</Text> {item.ageCategory || 'U20'}
-              </Text>
+              <StatusBadge status={item.status} />
             </View>
-            <StatusBadge status={item.status} />
-          </View>
-        </LinearGradient>
-      </TouchableOpacity>
+          </LinearGradient>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => onDecline(item._id, item.fullName)} activeOpacity={0.75} style={styles.declineCardBtn}>
+          <Ionicons name="close-circle-outline" size={16} color={colors.red} style={{ marginRight: spacing.sm }} />
+          <Text style={styles.declineCardBtnText}>Decline</Text>
+        </TouchableOpacity>
+      </View>
     </Animated.View>
   );
 };
@@ -94,6 +100,31 @@ export default function ManagePlayersScreen({ navigation }) {
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterAgeCategory, setFilterAgeCategory] = useState('All');
+
+  const handleDeclineQuick = (playerId, playerName) => {
+    const deletePlayer = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        await axios.put(`${API_URL}/players/${playerId}/decline`, {}, { headers: { Authorization: `Bearer ${token}` } });
+        Alert.alert('Success', 'Player deleted.');
+        loadPlayers();
+      } catch (e) {
+        Alert.alert('Error', e.response?.data?.message || 'Failed to delete');
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Delete ${playerName}? This cannot be undone.`)) {
+        deletePlayer();
+      }
+      return;
+    }
+
+    Alert.alert('Delete Player', `Delete ${playerName}? This cannot be undone.`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: deletePlayer }
+    ]);
+  };
 
   const loadPlayers = async () => {
     setLoading(true);
@@ -131,7 +162,7 @@ export default function ManagePlayersScreen({ navigation }) {
           data={players}
           keyExtractor={item => item._id}
           renderItem={({ item }) => (
-            <ManageCard item={item} onPress={() => navigation.navigate('PlayerDetail', { id: item._id })} />
+            <ManageCard item={item} onPress={() => navigation.navigate('PlayerDetail', { id: item._id })} onDecline={handleDeclineQuick} />
           )}
           contentContainerStyle={styles.list}
           ListEmptyComponent={
@@ -208,4 +239,6 @@ const styles = StyleSheet.create({
   emptyIconWrap: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.bgCard, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.lg },
   emptyTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
   emptySub: { color: colors.textMuted, fontSize: 13, marginTop: spacing.xs },
+  declineCardBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginHorizontal: spacing.lg, marginTop: spacing.sm, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.md, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border },
+  declineCardBtnText: { color: colors.red, fontWeight: '700', fontSize: 13 },
 });

@@ -18,16 +18,20 @@ const formatDate = (dateString) => {
 };
 
 const fetchUriAsBase64 = async (uri) => {
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    const buffer = await blob.arrayBuffer();
-    const bytes = new Uint8Array(buffer);
-    let binary = '';
-    const chunkSize = 0x8000;
-    for (let i = 0; i < bytes.length; i += chunkSize) {
-        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+    try {
+        const response = await fetch(uri);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const blob = await response.blob();
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    } catch (e) {
+        console.error('fetchUriAsBase64 error:', e);
+        throw e;
     }
-    return global.btoa(binary);
 };
 
 const getAssetBase64 = async (assetModule, label) => {
@@ -39,17 +43,25 @@ const getAssetBase64 = async (assetModule, label) => {
             throw new Error(`No URI available for ${label}`);
         }
 
-        if (Platform.OS === 'web') {
-            const base64 = await fetchUriAsBase64(assetUri);
-            return `data:image/png;base64,${base64}`;
-        }
+        try {
+            if (Platform.OS === 'web') {
+                const dataUrl = await fetchUriAsBase64(assetUri);
+                console.log(`${label} loaded successfully for web`);
+                return dataUrl;
+            }
 
-        const base64 = await FileSystem.readAsStringAsync(assetUri, {
-            encoding: FileSystem.EncodingType.Base64,
-        });
-        return `data:image/png;base64,${base64}`;
+            const base64 = await FileSystem.readAsStringAsync(assetUri, {
+                encoding: FileSystem.EncodingType.Base64,
+            });
+            const dataUrl = `data:image/png;base64,${base64}`;
+            console.log(`${label} loaded successfully for native`);
+            return dataUrl;
+        } catch (readError) {
+            console.warn(`FileSystem read failed for ${label}, trying fetch:`, readError);
+            return await fetchUriAsBase64(assetUri);
+        }
     } catch (e) {
-        console.warn(`Could not load ${label}:`, e);
+        console.error(`Failed to load ${label}:`, e);
         return null;
     }
 };
@@ -166,14 +178,21 @@ const PlayerIdCard = ({ player }) => {
     const handleDownload = async () => {
         try {
             setDownloading(true);
+            console.log('Starting PDF generation...');
             const signatureBase64 = await getAssetBase64(SIGNATURE_ASSET, 'signature');
+            console.log('Signature loaded:', signatureBase64 ? 'YES' : 'NO');
+            
+            const html = buildHtml(player, signatureBase64);
+            console.log('HTML built, generating PDF...');
+            
             const { uri } = await Print.printToFileAsync({
-                html: buildHtml(player, signatureBase64),
+                html,
                 base64: false,
                 width: 440,
                 height: 700,
             });
 
+            console.log('PDF generated at:', uri);
             const isWeb = Platform.OS === 'web';
             const canShare = !isWeb && await Sharing.isAvailableAsync();
 

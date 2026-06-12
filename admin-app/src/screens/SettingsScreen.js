@@ -113,7 +113,7 @@ export default function SettingsScreen({ setToken }) {
       <View style={styles.versionFooter}>
         <View style={styles.versionRowInner}>
           <Text style={styles.versionLabel}>App Version</Text>
-          <Text style={styles.versionValue}>2.0</Text>
+          <Text style={styles.versionValue}>2.1</Text>
         </View>
         <Text style={styles.createdBy}>Created by Syed Firas</Text>
       </View>
