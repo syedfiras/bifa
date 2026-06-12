@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, Image, TextInput, Animated } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, Image, TextInput, Animated, Modal } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,6 +9,41 @@ import { colors, spacing, radius, shadows, gradients } from '../theme';
 const POSITIONS = ['All', 'Goalkeeper', 'CB', 'LB', 'RB', 'CM', 'CDM', 'CAM', 'LW', 'RW', 'CF', 'ST'];
 const AGE_CATEGORIES = ['All', 'U13', 'U15', 'U17', 'U19', 'U20', 'SENIOR'];
 const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
+
+const Dropdown = ({ label, options, selected, onSelect }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <TouchableOpacity style={styles.dropdownBtn} onPress={() => setOpen(true)} activeOpacity={0.8}>
+        <Text style={styles.dropdownLabel}>{label}</Text>
+        <View style={styles.dropdownValueWrap}>
+          <Text style={styles.dropdownValue}>{selected || 'All'}</Text>
+          <Ionicons name="chevron-down" size={18} color={colors.textMuted} />
+        </View>
+      </TouchableOpacity>
+      <Modal visible={open} transparent animationType="fade">
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setOpen(false)}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>{label}</Text>
+            {options.map(option => (
+              <TouchableOpacity
+                key={option}
+                style={[styles.modalOption, selected === option && styles.modalOptionActive]}
+                activeOpacity={0.7}
+                onPress={() => {
+                  onSelect(option);
+                  setOpen(false);
+                }}
+              >
+                <Text style={[styles.modalOptionText, selected === option && styles.modalOptionTextActive]}>{option}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </>
+  );
+};
 
 const Chip = ({ label, active, onPress }) => (
   <TouchableOpacity
@@ -20,7 +55,7 @@ const Chip = ({ label, active, onPress }) => (
   </TouchableOpacity>
 );
 
-const PlayerCard = ({ item, onPress }) => {
+const PlayerCard = ({ item, onPress, index }) => {
   const scale = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.spring(scale, { toValue: 1, tension: 40, friction: 9, useNativeDriver: true }).start();
@@ -31,6 +66,9 @@ const PlayerCard = ({ item, onPress }) => {
       <TouchableOpacity activeOpacity={0.75} onPress={onPress}>
         <LinearGradient colors={gradients.card} style={styles.card}>
           <View style={styles.cardContent}>
+            <View style={styles.serialWrap}>
+              <Text style={styles.serialText}>{(index || 0) + 1}</Text>
+            </View>
             {item.profilePhoto ? (
               <Image source={{ uri: item.profilePhoto }} style={styles.avatar} />
             ) : (
@@ -74,7 +112,9 @@ export default function RosterScreen({ navigation }) {
       if (filterPos !== 'All') queryUrl += `&position=${encodeURIComponent(filterPos)}`;
       if (filterAge !== 'All') queryUrl += `&ageCategory=${encodeURIComponent(filterAge)}`;
       const res = await axios.get(queryUrl, { headers: { Authorization: `Bearer ${token}` } });
-      setPlayers(res.data.data);
+      const playersData = (res.data.data || []).slice();
+      playersData.sort((a, b) => (a.fullName || '').localeCompare(b.fullName || '', undefined, { sensitivity: 'base' }));
+      setPlayers(playersData);
     } catch (e) { console.log(e); }
     setLoading(false);
     setRefreshing(false);
@@ -115,26 +155,20 @@ export default function RosterScreen({ navigation }) {
         ) : null}
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={styles.filterContent}>
-        {POSITIONS.map(pos => (
-          <Chip key={pos} label={pos} active={filterPos === pos} onPress={() => setFilterPos(pos)} />
-        ))}
-      </ScrollView>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={styles.filterContent}>
-        {AGE_CATEGORIES.map(age => (
-          <Chip key={age} label={age} active={filterAge === age} onPress={() => setFilterAge(age)} />
-        ))}
-      </ScrollView>
+      <View style={styles.dropdownRow}>
+        <Dropdown label="Position" options={POSITIONS} selected={filterPos} onSelect={setFilterPos} />
+        <Dropdown label="Age" options={AGE_CATEGORIES} selected={filterAge} onSelect={setFilterAge} />
+      </View>
 
       {loading ? (
         <View style={styles.loadingWrap}>
           <ActivityIndicator size="large" color={colors.yellow} />
         </View>
       ) : (
-        <FlatList
-          data={filteredPlayers}
-          keyExtractor={item => item._id}
-          renderItem={({ item }) => <PlayerCard item={item} onPress={() => navigation.navigate('PlayerDetail', { id: item._id })} />}
+          <FlatList
+            data={filteredPlayers}
+            keyExtractor={item => item._id}
+            renderItem={({ item, index }) => <PlayerCard item={item} index={index} onPress={() => navigation.navigate('PlayerDetail', { id: item._id })} />}
           contentContainerStyle={styles.list}
           refreshing={refreshing}
           onRefresh={() => { setRefreshing(true); loadPlayers(true); }}
@@ -165,6 +199,27 @@ const styles = StyleSheet.create({
   clearBtn: { padding: spacing.xs },
   filterRow: { maxHeight: 52, backgroundColor: colors.bgLight, borderBottomWidth: 1, borderBottomColor: colors.border },
   filterContent: { paddingHorizontal: spacing.lg, alignItems: 'center', paddingVertical: spacing.sm },
+  dropdownRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.lg, gap: spacing.sm, marginBottom: spacing.sm },
+  dropdownBtn: {
+    flex: 1,
+    minWidth: 130,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: radius.full,
+    backgroundColor: colors.bgCard,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  dropdownLabel: { color: colors.textSecondary, fontSize: 11, marginBottom: 4, textTransform: 'uppercase', fontWeight: '700' },
+  dropdownValueWrap: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  dropdownValue: { color: colors.text, fontSize: 14, fontWeight: '700' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', padding: spacing.lg },
+  modalCard: { backgroundColor: colors.bg, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border },
+  modalTitle: { color: colors.text, fontSize: 15, fontWeight: '800', marginBottom: spacing.sm },
+  modalOption: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.md, marginBottom: spacing.xs },
+  modalOptionActive: { backgroundColor: colors.yellowDim },
+  modalOptionText: { color: colors.textSecondary, fontSize: 14 },
+  modalOptionTextActive: { color: colors.text, fontWeight: '800' },
   chip: {
     paddingHorizontal: spacing.lg, paddingVertical: spacing.sm,
     borderRadius: radius.full, backgroundColor: colors.bgCard,
@@ -182,6 +237,8 @@ const styles = StyleSheet.create({
   info: { flex: 1 },
   name: { color: colors.text, fontSize: 16, fontWeight: '700' },
   details: { color: colors.textSecondary, fontSize: 12, marginTop: 2, fontWeight: '600' },
+  serialWrap: { width: 34, height: 34, borderRadius: 18, backgroundColor: colors.bgCard, justifyContent: 'center', alignItems: 'center', marginRight: spacing.md, borderWidth: 1, borderColor: colors.border },
+  serialText: { color: colors.text, fontWeight: '800' },
   activeRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.xs },
   activeDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: colors.green, marginRight: spacing.xs },
   activeText: { color: colors.green, fontSize: 11, fontWeight: '700' },

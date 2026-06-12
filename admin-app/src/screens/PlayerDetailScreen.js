@@ -46,16 +46,14 @@ export default function PlayerDetailScreen({ route, navigation }) {
 
   useEffect(() => { loadPlayer(); }, [id]);
 
-  const handleAction = async (action) => {
+  const handleAccept = async () => {
     try {
       setLoading(true);
       const token = await AsyncStorage.getItem('token');
-      const routeUrl = action === 'accept'
-        ? `${API_URL}/players/${id}/accept`
-        : `${API_URL}/players/${id}/decline`;
+      const routeUrl = `${API_URL}/players/${id}/accept`;
       await axios.put(routeUrl, {}, { headers: { Authorization: `Bearer ${token}` } });
       setLoading(false);
-      Alert.alert('Success', `Player has been ${action}ed.`);
+      Alert.alert('Success', 'Player has been approved.');
       navigation.goBack();
     } catch (e) {
       setLoading(false);
@@ -96,8 +94,7 @@ export default function PlayerDetailScreen({ route, navigation }) {
     </View>
   );
 
-  const statusColor = player.status === 'accepted' ? colors.green
-    : player.status === 'declined' ? colors.red : colors.orange;
+  const statusColor = player.status === 'accepted' ? colors.green : colors.orange;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: spacing.xxxl }}>
@@ -189,22 +186,12 @@ export default function PlayerDetailScreen({ route, navigation }) {
         <View style={styles.actionContainer}>
           <TouchableOpacity
             style={{ flex: 1 }}
-            onPress={() => handleAction('accept')}
+            onPress={handleAccept}
             activeOpacity={0.8}
           >
             <LinearGradient colors={gradients.greenBtn} style={styles.actionBtn}>
               <Ionicons name="checkmark-circle" size={20} color={colors.text} style={{ marginRight: spacing.sm }} />
               <Text style={styles.actionBtnText}>Approve</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={{ flex: 1 }}
-            onPress={() => handleAction('decline')}
-            activeOpacity={0.8}
-          >
-            <LinearGradient colors={gradients.redBtn} style={styles.actionBtn}>
-              <Ionicons name="close-circle" size={20} color={colors.text} style={{ marginRight: spacing.sm }} />
-              <Text style={styles.actionBtnText}>Decline</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>

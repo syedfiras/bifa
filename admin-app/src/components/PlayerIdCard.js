@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Image, ActivityIndicator, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Print from 'expo-print';
@@ -17,12 +17,35 @@ const formatDate = (dateString) => {
     });
 };
 
+const fetchUriAsBase64 = async (uri) => {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    const buffer = await blob.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+    }
+    return global.btoa(binary);
+};
+
 const getAssetBase64 = async (assetModule, label) => {
     try {
         const asset = Asset.fromModule(assetModule);
         await asset.downloadAsync();
-        const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
-            encoding: 'base64',
+        const assetUri = asset.localUri || asset.uri;
+        if (!assetUri) {
+            throw new Error(`No URI available for ${label}`);
+        }
+
+        if (Platform.OS === 'web') {
+            const base64 = await fetchUriAsBase64(assetUri);
+            return `data:image/png;base64,${base64}`;
+        }
+
+        const base64 = await FileSystem.readAsStringAsync(assetUri, {
+            encoding: FileSystem.EncodingType.Base64,
         });
         return `data:image/png;base64,${base64}`;
     } catch (e) {
@@ -32,9 +55,7 @@ const getAssetBase64 = async (assetModule, label) => {
 };
 
 const buildHtml = (player, signatureBase64) => {
-    const statusColor =
-        player.status === 'accepted' ? '#4CAF50' :
-        player.status === 'declined' ? '#F44336' : '#f39c12';
+    const statusColor = player.status === 'accepted' ? '#4CAF50' : '#f39c12';
 
     const photoHtml = player.profilePhoto
         ? `<img src="${player.profilePhoto}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;" />`
@@ -152,11 +173,25 @@ const PlayerIdCard = ({ player }) => {
                 width: 440,
                 height: 700,
             });
-            const canShare = await Sharing.isAvailableAsync();
+
+            const isWeb = Platform.OS === 'web';
+            const canShare = !isWeb && await Sharing.isAvailableAsync();
+
+            if (isWeb) {
+                const link = document.createElement('a');
+                link.href = uri;
+                link.download = `${player.fullName} - BIFA ID Card.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                return;
+            }
+
             if (!canShare) {
                 Alert.alert('Unavailable', 'Sharing is not available on this device.');
                 return;
             }
+
             await Sharing.shareAsync(uri, {
                 mimeType: 'application/pdf',
                 dialogTitle: `${player.fullName} – BIFA ID Card`,
@@ -227,8 +262,7 @@ const PlayerIdCard = ({ player }) => {
                             <Text style={styles.labelText}>Status</Text>
                         </View>
                         <Text style={[styles.valueText, {
-                            color: player.status === 'accepted' ? '#4CAF50' :
-                                   player.status === 'declined' ? '#F44336' : '#f39c12',
+                            color: player.status === 'accepted' ? '#4CAF50' : '#f39c12',
                             textTransform: 'uppercase', fontWeight: '900'
                         }]}>{player.status}</Text>
                     </View>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Animated, ScrollView } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Animated, ScrollView, Modal } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,10 +9,45 @@ import { colors, spacing, radius, shadows, gradients } from '../theme';
 const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
 const AGE_CATEGORIES = ['All', 'U13', 'U15', 'U17', 'U19', 'U20', 'SENIOR'];
 
+const Dropdown = ({ label, options, selected, onSelect }) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <TouchableOpacity style={styles.dropdownBtn} onPress={() => setOpen(true)} activeOpacity={0.8}>
+        <Text style={styles.dropdownLabel}>{label}</Text>
+        <View style={styles.dropdownValueWrap}>
+          <Text style={styles.dropdownValue}>{selected || 'All'}</Text>
+          <Ionicons name="chevron-down" size={16} color={colors.textSecondary} />
+        </View>
+      </TouchableOpacity>
+      <Modal visible={open} transparent animationType="fade">
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setOpen(false)}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>{label}</Text>
+            {options.map(option => (
+              <TouchableOpacity
+                key={option}
+                style={[styles.modalOption, selected === option && styles.modalOptionActive]}
+                activeOpacity={0.7}
+                onPress={() => {
+                  onSelect(option);
+                  setOpen(false);
+                }}
+              >
+                <Text style={[styles.modalOptionText, selected === option && styles.modalOptionTextActive]}>{option}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </>
+  );
+};
+
 const StatusBadge = ({ status }) => {
   const config = {
     pending: { color: colors.orange, bg: colors.orangeDim, icon: 'time-outline' },
-    declined: { color: colors.red, bg: colors.redDim, icon: 'close-circle-outline' },
   };
   const c = config[status] || config.pending;
   return (
@@ -58,14 +93,13 @@ const ManageCard = ({ item, onPress }) => {
 export default function ManagePlayersScreen({ navigation }) {
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState('pending');
   const [filterAgeCategory, setFilterAgeCategory] = useState('All');
 
   const loadPlayers = async () => {
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem('token');
-      let queryUrl = `${API_URL}/players?status=${filterStatus}`;
+      let queryUrl = `${API_URL}/players?status=pending`;
       if (filterAgeCategory !== 'All') queryUrl += `&ageCategory=${encodeURIComponent(filterAgeCategory)}`;
       const res = await axios.get(queryUrl, { headers: { Authorization: `Bearer ${token}` } });
       setPlayers(res.data.data);
@@ -76,45 +110,17 @@ export default function ManagePlayersScreen({ navigation }) {
   useEffect(() => {
     const u = navigation.addListener('focus', () => loadPlayers());
     return u;
-  }, [navigation, filterStatus, filterAgeCategory]);
+  }, [navigation, filterAgeCategory]);
 
-  useEffect(() => { loadPlayers(); }, [filterStatus, filterAgeCategory]);
+  useEffect(() => { loadPlayers(); }, [filterAgeCategory]);
 
   return (
     <View style={styles.container}>
       <LinearGradient colors={gradients.bg} style={StyleSheet.absoluteFillObject} />
 
-      <View style={styles.toggleContainer}>
-        <TouchableOpacity
-          style={[styles.toggleBtn, filterStatus === 'pending' && styles.toggleActive]}
-          onPress={() => setFilterStatus('pending')}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="time-outline" size={16} color={filterStatus === 'pending' ? colors.textDark : colors.textSecondary} style={{ marginRight: 6 }} />
-          <Text style={[styles.toggleText, filterStatus === 'pending' && styles.toggleTextActive]}>Pending</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.toggleBtn, filterStatus === 'declined' && styles.toggleActive]}
-          onPress={() => setFilterStatus('declined')}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="close-circle-outline" size={16} color={filterStatus === 'declined' ? colors.textDark : colors.textSecondary} style={{ marginRight: 6 }} />
-          <Text style={[styles.toggleText, filterStatus === 'declined' && styles.toggleTextActive]}>Declined</Text>
-        </TouchableOpacity>
+      <View style={styles.filterRowTop}>
+        <Dropdown label="Application age" options={AGE_CATEGORIES} selected={filterAgeCategory} onSelect={setFilterAgeCategory} />
       </View>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.ageRow} contentContainerStyle={styles.ageContent}>
-        {AGE_CATEGORIES.map(category => (
-          <TouchableOpacity
-            key={category}
-            style={[styles.ageChip, filterAgeCategory === category && styles.ageChipActive]}
-            onPress={() => setFilterAgeCategory(category)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.ageChipText, filterAgeCategory === category && styles.ageChipTextActive]}>{category}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
 
       {loading ? (
         <View style={styles.loadingWrap}>
@@ -133,7 +139,7 @@ export default function ManagePlayersScreen({ navigation }) {
               <View style={styles.emptyIconWrap}>
                 <Ionicons name="file-tray-outline" size={32} color={colors.textMuted} />
               </View>
-              <Text style={styles.emptyTitle}>No {filterStatus} applications</Text>
+              <Text style={styles.emptyTitle}>No pending applications</Text>
               <Text style={styles.emptySub}>All clear for this category</Text>
             </View>
           }
@@ -145,6 +151,7 @@ export default function ManagePlayersScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  filterRowTop: { marginHorizontal: spacing.lg, marginTop: spacing.md, marginBottom: spacing.sm },
   toggleContainer: {
     flexDirection: 'row', justifyContent: 'center', paddingVertical: spacing.lg,
     borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.bgCard,
@@ -159,6 +166,25 @@ const styles = StyleSheet.create({
   toggleTextActive: { color: colors.textDark },
   ageRow: { maxHeight: 48, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.bgCard },
   ageContent: { paddingHorizontal: spacing.lg, alignItems: 'center', paddingVertical: spacing.sm },
+  dropdownBtn: {
+    minWidth: 130,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: radius.full,
+    backgroundColor: colors.bg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  dropdownLabel: { color: colors.textSecondary, fontSize: 11, marginBottom: 4, textTransform: 'uppercase', fontWeight: '700' },
+  dropdownValueWrap: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  dropdownValue: { color: colors.text, fontSize: 14, fontWeight: '700' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', padding: spacing.lg },
+  modalCard: { backgroundColor: colors.bg, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border },
+  modalTitle: { color: colors.text, fontSize: 15, fontWeight: '800', marginBottom: spacing.sm },
+  modalOption: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.md, marginBottom: spacing.xs },
+  modalOptionActive: { backgroundColor: colors.yellowDim },
+  modalOptionText: { color: colors.textSecondary, fontSize: 14 },
+  modalOptionTextActive: { color: colors.text, fontWeight: '800' },
   ageChip: {
     paddingVertical: spacing.xs, paddingHorizontal: spacing.md,
     borderRadius: radius.full, backgroundColor: colors.bg, borderWidth: 1,
