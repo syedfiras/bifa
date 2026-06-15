@@ -10,7 +10,7 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
 const AGE_CATEGORIES = ['U13', 'U15', 'U17', 'U19', 'U20', 'SENIOR'];
 const POSITION_ORDER = ['Goalkeeper', 'CB', 'LB', 'RB', 'CM', 'CDM', 'CAM', 'LW', 'RW', 'CF', 'ST'];
 
-const STATUS_OPTIONS = ['All', 'pending', 'accepted'];
+const STATUS_OPTIONS = ['All', 'Pending', 'Accepted'];
 
 const Dropdown = ({ label, options, selected, onSelect }) => {
   const [open, setOpen] = useState(false);
@@ -19,7 +19,7 @@ const Dropdown = ({ label, options, selected, onSelect }) => {
       <TouchableOpacity style={styles.dropdownBtn} onPress={() => setOpen(true)} activeOpacity={0.8}>
         <Text style={styles.dropdownLabel}>{label}</Text>
         <View style={styles.dropdownValueWrap}>
-          <Text style={styles.dropdownValue}>{selected || 'All'}</Text>
+          <Text style={styles.dropdownValue} numberOfLines={1} ellipsizeMode="tail">{selected || 'All'}</Text>
           <Ionicons name="chevron-down" size={16} color={colors.textMuted} />
         </View>
       </TouchableOpacity>
@@ -114,7 +114,7 @@ export default function DashboardScreen({ navigation }) {
         players = players.filter(p => (p.ageCategory || 'U20') === filterAge);
       }
       if (filterStatus && filterStatus !== 'All') {
-        players = players.filter(p => p.status === filterStatus);
+        players = players.filter(p => p.status === filterStatus.toLowerCase());
       }
       const referees = resReferees.data.data;
       setStats({
@@ -169,7 +169,7 @@ export default function DashboardScreen({ navigation }) {
         <View style={styles.statsSection}>
           <View style={styles.filterRow}>
             <Dropdown label="Position" options={['All', ...POSITION_ORDER]} selected={filterPos} onSelect={setFilterPos} />
-            <Dropdown label="Age" options={["All", ...AGE_CATEGORIES]} selected={filterAge} onSelect={setFilterAge} />
+            <Dropdown label="Category" options={["All", ...AGE_CATEGORIES]} selected={filterAge} onSelect={setFilterAge} />
             <Dropdown label="Status" options={STATUS_OPTIONS} selected={filterStatus} onSelect={setFilterStatus} />
           </View>
           <StatCard icon="people" label="Total" value={stats.totalPlayers} color={colors.yellow} delay={100} sublabel="registrations" />
@@ -276,11 +276,11 @@ const styles = StyleSheet.create({
   graphBarFill: { height: 10, borderRadius: 6, backgroundColor: colors.yellow },
   graphValue: { color: colors.textSecondary, width: 30, textAlign: 'right', fontSize: 12 },
   graphEmpty: { color: colors.textSecondary, textAlign: 'center', paddingVertical: spacing.md },
-  filterRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md, alignItems: 'flex-end' },
+  filterRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md, alignItems: 'flex-end' },
   dropdownBtn: {
-    minWidth: 120,
+    flex: 1,
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     borderRadius: radius.md,
     backgroundColor: colors.bgCard,
     borderWidth: 1,
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
   },
   dropdownLabel: { color: colors.textSecondary, fontSize: 11, marginBottom: 4, textTransform: 'uppercase', fontWeight: '700' },
   dropdownValueWrap: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  dropdownValue: { color: colors.text, fontSize: 14, fontWeight: '700' },
+  dropdownValue: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '700' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', padding: spacing.lg },
   modalCard: { backgroundColor: colors.bg, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border },
   modalTitle: { color: colors.text, fontSize: 15, fontWeight: '800', marginBottom: spacing.sm },
