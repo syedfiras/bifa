@@ -18,7 +18,7 @@ A full-stack club management system with a public registration portal, backend A
 4. In Supabase SQL Editor, run `backend/supabase-schema.sql`.
 5. Seed first admin:
    - `npm run seed:admin`
-   - This creates `admin / password123` if missing.
+   - This creates `username and password` if missing.
 6. Start backend:
    - Dev: `npm run dev`
    - Start: `npm start`
