@@ -34,4 +34,5 @@ A full-stack club management system with a public registration portal, backend A
 3. Test on device/emulator: `npm start`
    *(Note: Ensure your device and computer are on the same network. Look inside src/screens/LoginScreen.js to adjust the IP if testing on a physical iPhone/Android).*
    
-Login using the seeded admin credentials (`admin` / `password123`).
+
+
