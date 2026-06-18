@@ -88,8 +88,20 @@ export const getAssetBase64 = async (assetModule, label) => {
 
 export const buildHtml = (player, signatureBase64, cardType = 'normal') => {
     const cardConfig = CARD_TYPES[cardType] || CARD_TYPES.normal;
+    const isGold = cardType === 'gold';
     const statusColor = player.status === 'accepted' ? '#4CAF50' : '#f39c12';
     const positions = (player.positions || []).join(' - ');
+    const headerRowBg = isGold
+        ? 'linear-gradient(135deg, rgba(255,215,106,0.58), rgba(73,49,8,0.36))'
+        : 'linear-gradient(135deg, rgba(0,0,0,0.7), rgba(0,0,0,0.36))';
+    const headerPhotoBg = isGold
+        ? 'rgba(255,215,106,0.22)'
+        : 'transparent';
+    const headerInfoBg = isGold
+        ? 'linear-gradient(135deg, rgba(255,215,106,0.72), rgba(151,102,12,0.34))'
+        : 'transparent';
+    const headerNameColor = isGold ? '#15110a' : '#ffffff';
+    const headerMetaColor = isGold ? '#4b3608' : cardConfig.accent;
 
     const photoHtml = player.profilePhoto
         ? `<img src="${player.profilePhoto}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;" />`
@@ -112,13 +124,13 @@ export const buildHtml = (player, signatureBase64, cardType = 'normal') => {
     const frontBgSvg = `
       <svg width="400" height="640" viewBox="0 0 400 640" preserveAspectRatio="xMidYMid slice"
            style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;">
-        <rect x="0" y="0" width="200" height="175" fill="${cardConfig.accent}" opacity="${cardType === 'gold' ? '0.22' : '0.08'}"/>
-        <rect x="200" y="0" width="200" height="175" fill="#000000" opacity="0.4"/>
+        <rect x="0" y="0" width="400" height="175" fill="${cardConfig.accent}" opacity="${isGold ? '0.16' : '0'}"/>
+        <rect x="135" y="0" width="265" height="175" fill="#000000" opacity="${isGold ? '0.08' : '0.22'}"/>
         <line x1="-10" y1="40" x2="80" y2="-10" stroke="${cardConfig.accent}" stroke-width="0.6" opacity="0.15"/>
         <line x1="-10" y1="70" x2="110" y2="-10" stroke="${cardConfig.accent}" stroke-width="0.6" opacity="0.15"/>
         <line x1="-10" y1="100" x2="140" y2="-10" stroke="${cardConfig.accent}" stroke-width="0.6" opacity="0.15"/>
-        <polyline points="0,220 40,260 10,300 55,340 20,380 60,410 30,440 70,470 0,520" fill="none" stroke="${cardConfig.accent}" stroke-width="12" stroke-linejoin="round" stroke-linecap="round" opacity="0.12"/>
-        <polyline points="400,240 360,280 390,320 345,360 380,400 340,430 370,460 330,490 400,540" fill="none" stroke="${cardConfig.accent}" stroke-width="12" stroke-linejoin="round" stroke-linecap="round" opacity="0.12"/>
+        <polyline points="0,220 40,260 10,300 55,340 20,380 60,410 30,440 70,470 0,520" fill="none" stroke="${cardConfig.accent}" stroke-width="12" stroke-linejoin="round" stroke-linecap="round" opacity="0.2"/>
+        <polyline points="400,240 360,280 390,320 345,360 380,400 340,430 370,460 330,490 400,540" fill="none" stroke="${cardConfig.accent}" stroke-width="12" stroke-linejoin="round" stroke-linecap="round" opacity="0.2"/>
       </svg>`;
 
     return `<!DOCTYPE html>
@@ -136,17 +148,17 @@ export const buildHtml = (player, signatureBase64, cardType = 'normal') => {
     <div style="width:400px;height:640px;background:linear-gradient(145deg, ${cardConfig.bgStart}, ${cardConfig.bgEnd}) !important;border-radius:16px;border:2.5px solid ${cardConfig.border};overflow:hidden;color:white;position:relative;">
       ${frontBgSvg}
       <div style="position:relative;z-index:1;height:100%;display:flex;flex-direction:column;justify-content:space-between;">
-        <div style="display:flex;flex-direction:row;border-bottom:2.5px solid ${cardConfig.border};overflow:hidden;">
-          <div style="background:${cardConfig.panel} !important;padding:18px 14px 18px 18px;display:flex;align-items:center;justify-content:center;border-right:1.5px solid ${cardConfig.border};">
+        <div style="display:flex;flex-direction:row;min-height:138px;border-bottom:2.5px solid ${cardConfig.border};overflow:hidden;background:${headerRowBg} !important;">
+          <div style="flex:0 0 112px;background:${headerPhotoBg} !important;padding:18px 14px 18px 18px;display:flex;align-items:center;justify-content:center;">
             <div style="width:80px;height:100px;border-radius:8px;border:2px solid ${cardConfig.border};overflow:hidden;background:#1a1a1a !important;">
               ${photoHtml}
             </div>
           </div>
-          <div style="flex:1;padding:18px 16px;background:rgba(0,0,0,0.5) !important;display:flex;flex-direction:column;justify-content:center;gap:6px;">
-            <div style="color:#fff;font-size:18px;font-weight:900;letter-spacing:0.5px;line-height:1.2;">${player.fullName}</div>
-            <div style="color:${cardConfig.accent};font-size:13px;font-weight:bold;letter-spacing:0.5px;">${positions}</div>
+          <div style="flex:1;min-width:0;padding:18px 16px;background:${headerInfoBg} !important;display:flex;flex-direction:column;justify-content:center;gap:6px;overflow:hidden;">
+            <div style="color:${headerNameColor};font-size:18px;font-weight:900;letter-spacing:0.3px;line-height:1.15;max-width:100%;overflow-wrap:anywhere;">${player.fullName}</div>
+            <div style="color:${headerMetaColor};font-size:13px;font-weight:bold;letter-spacing:0.5px;max-width:100%;overflow-wrap:anywhere;">${positions}</div>
             <div style="display:inline-block;background:${cardConfig.accent} !important;color:#000;font-size:10px;font-weight:900;padding:2px 8px;border-radius:4px;letter-spacing:1px;align-self:flex-start;">${player.ageCategory || 'U20'}</div>
-            <div style="color:${cardConfig.accent};font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:1.6px;">${cardConfig.passLabel}</div>
+            <div style="color:${headerMetaColor};font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:1.6px;">${cardConfig.passLabel}</div>
           </div>
         </div>
         <div style="padding:14px 18px 12px;background:rgba(0,0,0,0.6) !important;flex:1;display:flex;flex-direction:column;justify-content:space-between;">
@@ -277,10 +289,10 @@ const PlayerIdCard = ({ player }) => {
                             </View>
                         )}
                     </View>
-                    <View style={styles.headerInfo}>
-                        <Text style={styles.playerName}>{player.fullName}</Text>
+                    <View style={[styles.headerInfo, isGold && styles.goldHeaderInfo]}>
+                        <Text style={[styles.playerName, isGold && styles.goldPlayerName]}>{player.fullName}</Text>
                         <Text style={[styles.playerPosition, isGold && styles.goldText]}>{positions}</Text>
-                        <Text style={styles.playerCategory}>{player.ageCategory || 'U20'}</Text>
+                        <Text style={[styles.playerCategory, isGold && styles.goldPlayerCategory]}>{player.ageCategory || 'U20'}</Text>
                         <Text style={[styles.passLabel, isGold && styles.goldText]}>{cardConfig.passLabel}</Text>
                     </View>
                 </View>
@@ -364,7 +376,12 @@ const styles = StyleSheet.create({
         position: 'absolute', top: 0, right: -60, width: 150, height: '120%',
         backgroundColor: 'rgba(255,255,255,0.12)', transform: [{ rotate: '18deg' }],
     },
-    cardHeader: { flexDirection: 'row', padding: 20, borderBottomWidth: 2, borderBottomColor: '#f4ea26' },
+    cardHeader: {
+        flexDirection: 'row',
+        padding: 20,
+        borderBottomWidth: 2,
+        borderBottomColor: '#f4ea26',
+    },
     goldCardHeader: { borderBottomColor: '#ffd76a', backgroundColor: 'rgba(255,215,106,0.15)' },
     photoContainer: { marginRight: 15 },
     playerPhoto: { width: 80, height: 100, borderRadius: 8, borderWidth: 2, borderColor: '#f4ea26' },
@@ -373,10 +390,18 @@ const styles = StyleSheet.create({
         backgroundColor: '#1a1a1a', borderWidth: 2, borderColor: '#f4ea26',
         justifyContent: 'center', alignItems: 'center',
     },
-    headerInfo: { flex: 1, justifyContent: 'center' },
-    playerName: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 4 },
+    headerInfo: { flex: 1, minWidth: 0, justifyContent: 'center' },
+    goldHeaderInfo: {
+        backgroundColor: 'rgba(255,215,106,0.32)',
+        borderRadius: 10,
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+    },
+    playerName: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 4, flexShrink: 1 },
+    goldPlayerName: { color: '#15110a' },
     playerPosition: { color: '#f4ea26', fontSize: 14, fontWeight: '600', marginBottom: 2 },
     playerCategory: { color: '#fff', fontSize: 12, opacity: 0.8 },
+    goldPlayerCategory: { color: '#15110a', opacity: 0.85 },
     passLabel: { color: '#f4ea26', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.4, marginTop: 6 },
     cardBody: { flex: 1, padding: 20 },
     goldCardBody: { backgroundColor: 'rgba(255,215,106,0.08)' },
