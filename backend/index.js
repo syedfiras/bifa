@@ -20,9 +20,9 @@ const verifySupabaseConnection = async () => {
     console.log('Supabase connected');
 };
 
-app.use('/api/auth', authRoutes);
-app.use('/api/players', playerRoutes);
-app.use('/api/referees', refereeRoutes);
+app.use('/auth', authRoutes);
+app.use('/players', playerRoutes);
+app.use('/referees', refereeRoutes);
 
 app.get('/', (req, res) => {
     res.send('API running');
