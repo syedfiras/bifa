@@ -36,7 +36,12 @@ const mapRow = (row) => ({
     status: row.status,
     accessPass: row.access_pass,
     registrationDate: row.registration_date,
-    joiningYear: row.joining_year
+    joiningYear: row.joining_year,
+    matchesPlayed: row.matches_played || 0,
+    goals: row.goals || 0,
+    assists: row.assists || 0,
+    inStats: row.in_stats || false,
+    password: row.password
 });
 
 class PlayerRecord {
@@ -54,6 +59,11 @@ class PlayerRecord {
         this.accessPass = row.access_pass;
         this.registrationDate = row.registration_date;
         this.joiningYear = row.joining_year;
+        this.matchesPlayed = row.matches_played || 0;
+        this.goals = row.goals || 0;
+        this.assists = row.assists || 0;
+        this.inStats = row.in_stats || false;
+        this.password = row.password;
     }
 
     async save() {
@@ -62,7 +72,11 @@ class PlayerRecord {
             .update({
                 status: this.status,
                 access_pass: this.accessPass,
-                age_category: this.ageCategory // Allow manual override
+                age_category: this.ageCategory, // Allow manual override
+                matches_played: this.matchesPlayed,
+                goals: this.goals,
+                assists: this.assists,
+                in_stats: this.inStats
             })
             .eq('id', this.id)
             .select()
@@ -105,6 +119,10 @@ class PlayerQuery {
             query = query.eq('age_category', this.filter.ageCategory);
         }
 
+        if (this.filter.inStats !== undefined) {
+            query = query.eq('in_stats', this.filter.inStats);
+        }
+
         const { data, error } = await query.order(this.sortField, { ascending: this.sortAscending });
         if (error) {
             throw new Error(error.message);
@@ -125,13 +143,19 @@ class Player {
         const basePayload = {
             full_name: payload.fullName,
             email: payload.email || null,
-            phone: payload.phone,
-            date_of_birth: payload.dateOfBirth,
+            phone: payload.phone || null,
             positions: payload.positions,
             profile_photo: payload.profilePhoto || null,
-            status: 'pending',
-            age_category: ageCategory // Use auto-calculated or manually provided value
+            status: payload.status || 'pending',
+            age_category: ageCategory, // Use auto-calculated or manually provided value
+            matches_played: payload.matchesPlayed !== undefined ? payload.matchesPlayed : 0,
+            goals: payload.goals !== undefined ? payload.goals : 0,
+            assists: payload.assists !== undefined ? payload.assists : 0
         };
+
+        if (payload.dateOfBirth !== undefined) {
+            basePayload.date_of_birth = payload.dateOfBirth;
+        }
 
         if (payload.joiningYear !== undefined) {
             basePayload.joining_year = Number(payload.joiningYear);
@@ -170,6 +194,11 @@ class Player {
         if (update.accessPass !== undefined) fields.access_pass = update.accessPass;
         if (update.profilePhoto !== undefined) fields.profile_photo = update.profilePhoto;
         if (update.ageCategory !== undefined) fields.age_category = update.ageCategory;
+        if (update.matchesPlayed !== undefined) fields.matches_played = update.matchesPlayed;
+        if (update.goals !== undefined) fields.goals = update.goals;
+        if (update.assists !== undefined) fields.assists = update.assists;
+        if (update.inStats !== undefined) fields.in_stats = update.inStats;
+        if (update.password !== undefined) fields.password = update.password;
         
         // If date of birth is being updated, auto-update age category unless explicitly provided
         if (update.dateOfBirth !== undefined) {

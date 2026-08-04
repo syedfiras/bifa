@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,
-  Alert, ScrollView, Image, Animated, Platform
+  Alert, ScrollView, Image, Animated, Platform, Modal, TextInput
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
@@ -24,11 +24,22 @@ const InfoRow = ({ icon, label, value, valueColor }) => (
   </View>
 );
 
+const StatTile = ({ icon, value, label }) => (
+  <View style={styles.statTile}>
+    <Ionicons name={icon} size={16} color={colors.yellow} />
+    <Text style={styles.statValue}>{value}</Text>
+    <Text style={styles.statLabel}>{label}</Text>
+  </View>
+);
+
 export default function PlayerDetailScreen({ route, navigation }) {
   const { id } = route.params;
   const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [statsModalOpen, setStatsModalOpen] = useState(false);
+  const [savingStats, setSavingStats] = useState(false);
+  const [statDraft, setStatDraft] = useState({ matchesPlayed: '0', goals: '0', assists: '0' });
   const headerAnim = useRef(new Animated.Value(0)).current;
 
   const loadPlayer = async () => {
@@ -46,6 +57,44 @@ export default function PlayerDetailScreen({ route, navigation }) {
   };
 
   useEffect(() => { loadPlayer(); }, [id]);
+
+  const openEditStats = () => {
+    setStatDraft({
+      matchesPlayed: String(player.matchesPlayed ?? 0),
+      goals: String(player.goals ?? 0),
+      assists: String(player.assists ?? 0),
+    });
+    setStatsModalOpen(true);
+  };
+
+  const saveStats = async () => {
+    const parse = (v) => {
+      const n = Number(v);
+      return Number.isInteger(n) && n >= 0 ? n : NaN;
+    };
+    const stats = {
+      matchesPlayed: parse(statDraft.matchesPlayed),
+      goals: parse(statDraft.goals),
+      assists: parse(statDraft.assists),
+    };
+    if ([stats.matchesPlayed, stats.goals, stats.assists].some(Number.isNaN)) {
+      Alert.alert('Invalid input', 'Stats must be non-negative whole numbers.');
+      return;
+    }
+    try {
+      setSavingStats(true);
+      const token = await AsyncStorage.getItem('token');
+      const res = await axios.put(`${API_URL}/players/${id}/stats`, stats, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setPlayer(res.data.data);
+      setStatsModalOpen(false);
+    } catch (e) {
+      Alert.alert('Error', e.response?.data?.message || 'Failed to save stats');
+    } finally {
+      setSavingStats(false);
+    }
+  };
 
   const handleAccept = async () => {
     try {
@@ -125,6 +174,7 @@ export default function PlayerDetailScreen({ route, navigation }) {
   );
 
   const statusColor = player.status === 'accepted' ? colors.green : colors.orange;
+  const showStats = navigation.getState?.()?.routes?.[0]?.name === 'StatsList';
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: spacing.xxxl }}>
@@ -169,6 +219,28 @@ export default function PlayerDetailScreen({ route, navigation }) {
           valueColor={statusColor}
         />
       </View>
+
+      {showStats && (
+        <View style={styles.statsCard}>
+          <View style={styles.statsHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <Ionicons name="bar-chart" size={18} color={colors.yellow} />
+              <Text style={styles.statsTitle}>Season Stats</Text>
+            </View>
+            <TouchableOpacity style={styles.statsEditBtn} onPress={openEditStats} activeOpacity={0.8}>
+              <Ionicons name="pencil" size={13} color={colors.textDark} />
+              <Text style={styles.statsEditText}>EDIT</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.statsRow}>
+            <StatTile icon="calendar" value={player.matchesPlayed ?? 0} label="Matches" />
+            <View style={styles.statDivider} />
+            <StatTile icon="football" value={player.goals ?? 0} label="Goals" />
+            <View style={styles.statDivider} />
+            <StatTile icon="hand-left" value={player.assists ?? 0} label="Assists" />
+          </View>
+        </View>
+      )}
 
       {player.accessPass && (
         <LinearGradient colors={['rgba(244,234,38,0.12)', 'rgba(181,173,16,0.05)']} style={styles.passCard}>
@@ -246,6 +318,55 @@ export default function PlayerDetailScreen({ route, navigation }) {
           </TouchableOpacity>
         </View>
       )}
+
+      <Modal visible={statsModalOpen} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Edit Season Stats</Text>
+            <Text style={styles.modalSubtitle}>{player.fullName}</Text>
+            {[
+              { key: 'matchesPlayed', label: 'Matches Played', icon: 'calendar' },
+              { key: 'goals', label: 'Goals', icon: 'football' },
+              { key: 'assists', label: 'Assists', icon: 'hand-left' },
+            ].map(field => (
+              <View key={field.key} style={styles.modalFieldRow}>
+                <Ionicons name={field.icon} size={16} color={colors.yellow} />
+                <Text style={styles.modalFieldLabel}>{field.label}</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  keyboardType="number-pad"
+                  value={statDraft[field.key]}
+                  onChangeText={text => setStatDraft(prev => ({ ...prev, [field.key]: text.replace(/[^0-9]/g, '') }))}
+                  placeholder="0"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </View>
+            ))}
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.modalBtnCancel]}
+                onPress={() => setStatsModalOpen(false)}
+                disabled={savingStats}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalBtnCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.modalBtnSave]}
+                onPress={saveStats}
+                disabled={savingStats}
+                activeOpacity={0.8}
+              >
+                {savingStats ? (
+                  <ActivityIndicator size="small" color={colors.textDark} />
+                ) : (
+                  <Text style={styles.modalBtnSaveText}>Save</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -279,6 +400,42 @@ const styles = StyleSheet.create({
     padding: spacing.xl, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.yellow,
     ...shadows.md,
   },
+  statsCard: {
+    marginHorizontal: spacing.xl, borderRadius: radius.lg, overflow: 'hidden',
+    borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgLight, ...shadows.md,
+  },
+  statsHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border,
+  },
+  statsTitle: { color: colors.text, fontSize: 15, fontWeight: '800' },
+  statsEditBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
+    backgroundColor: colors.yellow, paddingVertical: 8, paddingHorizontal: spacing.md, borderRadius: radius.full,
+  },
+  statsEditText: { color: colors.textDark, fontSize: 11, fontWeight: '900', letterSpacing: 0.8 },
+  statsRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgCard },
+  statTile: { flex: 1, alignItems: 'center', paddingVertical: spacing.lg },
+  statValue: { color: colors.text, fontSize: 22, fontWeight: '900', marginTop: 4 },
+  statLabel: { color: colors.textSecondary, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 2 },
+  statDivider: { width: 1, height: 34, backgroundColor: colors.border },
+  modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', padding: spacing.xl },
+  modalCard: { backgroundColor: colors.bgLight, borderRadius: radius.lg, padding: spacing.xl, borderWidth: 1, borderColor: colors.border, ...shadows.lg },
+  modalTitle: { color: colors.text, fontSize: 18, fontWeight: '900' },
+  modalSubtitle: { color: colors.textSecondary, fontSize: 13, marginTop: 2, marginBottom: spacing.lg },
+  modalFieldRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md },
+  modalFieldLabel: { flex: 1, color: colors.textSecondary, fontSize: 14, fontWeight: '700', marginLeft: spacing.md },
+  modalInput: {
+    width: 90, textAlign: 'center', color: colors.text, fontSize: 16, fontWeight: '800',
+    backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border,
+    borderRadius: radius.md, paddingVertical: 10,
+  },
+  modalActions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
+  modalBtn: { flex: 1, paddingVertical: spacing.md, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  modalBtnCancel: { backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border },
+  modalBtnCancelText: { color: colors.textSecondary, fontWeight: '800' },
+  modalBtnSave: { backgroundColor: colors.yellow },
+  modalBtnSaveText: { color: colors.textDark, fontWeight: '900' },
   passIconWrap: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.yellowDim, justifyContent: 'center', alignItems: 'center', marginRight: spacing.md },
   passLabel: { ...typography.label, color: colors.yellow, marginBottom: 2 },
   passValue: { color: colors.yellow, fontSize: 22, fontWeight: '900', letterSpacing: 2 },
