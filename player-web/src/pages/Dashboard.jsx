@@ -76,7 +76,7 @@ export default function Dashboard() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <img src={logo} alt="BIFA Club Logo" style={{ width: '60px', height: '60px', borderRadius: '15px', border: '2px solid var(--bifa-yellow)' }} />
         <div style={{ display: 'flex', gap: '10px' }}>
-          <Link to="/" className="btn-secondary" style={{ width: 'auto', padding: '10px 20px', textDecoration: 'none', display: 'inline-block' }}>Register</Link>
+          <Link to="/register" className="btn-secondary" style={{ width: 'auto', padding: '10px 20px', textDecoration: 'none', display: 'inline-block' }}>Register</Link>
           <button className="btn-secondary" style={{ width: 'auto', padding: '10px 20px' }} onClick={handleLogout}>Logout</button>
         </div>
       </div>

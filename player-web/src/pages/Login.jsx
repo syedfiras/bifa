@@ -85,7 +85,7 @@ export default function Login() {
           </button>
 
           <p className="subheading" style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.95rem' }}>
-            New player? <Link to="/" style={{ color: 'var(--bifa-yellow)' }}>Register here</Link>
+            New player? <Link to="/register" style={{ color: 'var(--bifa-yellow)' }}>Register here</Link>
           </p>
         </form>
       </div>
