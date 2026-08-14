@@ -33,6 +33,75 @@ const resizePhoto = (file) => new Promise((resolve, reject) => {
   image.src = imageUrl;
 });
 
+const UserIcon = () => (
+  <span className="input-icon">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  </span>
+);
+
+const MailIcon = () => (
+  <span className="input-icon">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+    </svg>
+  </span>
+);
+
+const PhoneIcon = () => (
+  <span className="input-icon">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+    </svg>
+  </span>
+);
+
+const CalendarIcon = () => (
+  <span className="input-icon">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  </span>
+);
+
+const TagIcon = () => (
+  <span className="input-icon">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.83z" />
+      <line x1="7" y1="7" x2="7.01" y2="7" />
+    </svg>
+  </span>
+);
+
+const GalleryIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <circle cx="8.5" cy="8.5" r="1.5" />
+    <polyline points="21 15 16 10 5 21" />
+  </svg>
+);
+
+const CameraIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+    <circle cx="12" cy="13" r="4" />
+  </svg>
+);
+
+const AlertIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}>
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
+  </svg>
+);
+
 export default function Register() {
   const currentYear = new Date().getFullYear();
   const galleryInputRef = useRef(null);
@@ -153,192 +222,234 @@ export default function Register() {
 
   if (isSuccess) {
     return (
-      <div className="container">
-        <div className="glass-card success-container">
-          <div className="success-icon">✓</div>
-          <h1 className="logo-text" style={{ fontSize: '2.5rem', marginBottom: '20px' }}>Registration Complete</h1>
-          <p className="subheading" style={{ fontSize: '1.2rem', marginBottom: '30px' }}>
-            Your registration has been submitted! Await admin approval.
-          </p>
-          <button className="btn-primary" onClick={() => {
-            setIsSuccess(false);
-            setFormData({ fullName: '', email: '', phone: '', dateOfBirth: '', ageCategory: '', joiningYear: '', positions: [], profilePhoto: '' });
-          }}>Register Another Player</button>
+      <div className="auth-page">
+        <div className="container auth-container">
+          <div className="glass-card success-container">
+            <div className="success-icon">✓</div>
+            <h1 className="logo-text" style={{ fontSize: '2rem', marginBottom: '16px' }}>Registration Complete</h1>
+            <p className="subheading" style={{ fontSize: '1.05rem', marginBottom: '30px', lineHeight: 1.6 }}>
+              Your registration has been submitted! Await admin approval.
+            </p>
+            <button className="btn-primary btn-shine" onClick={() => {
+              setIsSuccess(false);
+              setFormData({ fullName: '', email: '', phone: '', dateOfBirth: '', ageCategory: '', joiningYear: '', positions: [], profilePhoto: '' });
+            }}>Register Another Player</button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container">
-      <div className="header">
-        <img src={logo} alt="BIFA Club Logo" style={{ width: '130px', height: '130px', borderRadius: '25px', border: '3px solid var(--bifa-yellow)', marginBottom: '15px' }} />
-        <h1 className="logo-text" style={{ fontSize: '2rem', marginTop: '0', marginBottom: '10px' }}>BIFA</h1>
-        <p className="subheading">Official Player Registration Portal</p>
-        <Link to="/login" style={{ color: 'var(--bifa-yellow)', display: 'inline-block', marginTop: '10px', textDecoration: 'none' }}>
-          Already have an account? Login
-        </Link>
-      </div>
-
-      <div className="glass-card">
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label">Full Name</label>
-            <input
-              type="text"
-              className="form-input"
-              name="fullName"
-              placeholder="Enter your full name"
-              value={formData.fullName}
-              onChange={handleInputChange}
-              required
-            />
+    <div className="auth-page">
+      <div className="container auth-container">
+        <header className="auth-header">
+          <div className="auth-badge">
+            <img src={logo} alt="BIFA Club Logo" />
           </div>
+          <h1 className="logo-text">BIFA</h1>
+          <p className="subheading">Official Player Registration</p>
+          <span className="auth-pill">Season {currentYear}</span>
+        </header>
 
-          <div className="form-group">
-            <label className="form-label">Email Address (optional)</label>
-            <input
-              type="email"
-              className="form-input"
-              name="email"
-              placeholder="Enter your email address"
-              value={formData.email}
-              onChange={handleInputChange}
-            />
-          </div>
+        <div className="glass-card">
+          <form onSubmit={handleSubmit}>
+            <div className="form-section">
+              <h2 className="section-title">Personal Details</h2>
 
-          <div className="form-group">
-            <label className="form-label">Phone Number</label>
-            <input
-              type="tel"
-              className="form-input"
-              name="phone"
-              placeholder="Enter your phone number"
-              value={formData.phone}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="fullName">Full Name</label>
+                <div className="input-icon-wrap">
+                  <UserIcon />
+                  <input
+                    id="fullName"
+                    type="text"
+                    className="form-input"
+                    name="fullName"
+                    placeholder="Enter your full name"
+                    value={formData.fullName}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+              </div>
 
-          <div className="form-group">
-            <label className="form-label">Date of Birth</label>
-            <input
-              type="date"
-              className="form-input"
-              name="dateOfBirth"
-              value={formData.dateOfBirth}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="email">Email Address (optional)</label>
+                <div className="input-icon-wrap">
+                  <MailIcon />
+                  <input
+                    id="email"
+                    type="email"
+                    className="form-input"
+                    name="email"
+                    placeholder="Enter your email address"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </div>
 
-          <div className="form-group">
-            <label className="form-label">Age Category</label>
-            <input
-              type="text"
-              className="form-input"
-              name="ageCategory"
-              value={formData.ageCategory}
-              readOnly
-              style={{
-                backgroundColor: '#f0f0f0',
-                color: '#555',
-                cursor: 'not-allowed'
-              }}
-            />
-            <small style={{ display: 'block', marginTop: '5px', color: '#666' }}>
-              Automatically calculated from date of birth
-            </small>
-          </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="phone">Phone Number</label>
+                <div className="input-icon-wrap">
+                  <PhoneIcon />
+                  <input
+                    id="phone"
+                    type="tel"
+                    className="form-input"
+                    name="phone"
+                    placeholder="Enter your phone number"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+              </div>
 
-          <div className="form-group">
-            <label className="form-label">Joining Year</label>
-            <input
-              type="number"
-              className="form-input"
-              name="joiningYear"
-              placeholder="Enter joining year"
-              value={formData.joiningYear}
-              onChange={handleInputChange}
-              min="1900"
-              max={currentYear}
-              required
-            />
-          </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="dateOfBirth">Date of Birth</label>
+                <div className="input-icon-wrap">
+                  <CalendarIcon />
+                  <input
+                    id="dateOfBirth"
+                    type="date"
+                    className="form-input"
+                    name="dateOfBirth"
+                    value={formData.dateOfBirth}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+              </div>
 
-          <div className="form-group">
-            <label className="form-label">Profile Photo</label>
-            <input
-              ref={galleryInputRef}
-              type="file"
-              style={{ display: 'none' }}
-              accept="image/*"
-              onChange={handlePhotoUpload}
-              required
-            />
-            <input
-              ref={cameraInputRef}
-              type="file"
-              style={{ display: 'none' }}
-              accept="image/*"
-              capture="environment"
-              onChange={handlePhotoUpload}
-            />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => galleryInputRef.current?.click()}
-              >
-                Choose Photo
-              </button>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => cameraInputRef.current?.click()}
-              >
-                Open Camera
-              </button>
+              <div className="form-group">
+                <label className="form-label" htmlFor="ageCategory">Age Category</label>
+                <div className="input-icon-wrap">
+                  <TagIcon />
+                  <input
+                    id="ageCategory"
+                    type="text"
+                    className="form-input form-input-readonly"
+                    name="ageCategory"
+                    value={formData.ageCategory}
+                    readOnly
+                  />
+                </div>
+                <small className="field-hint">
+                  Automatically calculated from date of birth
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="joiningYear">Joining Year</label>
+                <div className="input-icon-wrap">
+                  <CalendarIcon />
+                  <input
+                    id="joiningYear"
+                    type="number"
+                    className="form-input"
+                    name="joiningYear"
+                    placeholder="Enter joining year"
+                    value={formData.joiningYear}
+                    onChange={handleInputChange}
+                    min="1900"
+                    max={currentYear}
+                    required
+                  />
+                </div>
+              </div>
             </div>
-            {isPhotoProcessing && (
-              <small style={{ display: 'block', marginTop: '8px', color: '#a1a1aa' }}>
-                Optimizing photo...
-              </small>
-            )}
-            {formData.profilePhoto && (
-              <div style={{ marginTop: '10px' }}>
-                <img src={formData.profilePhoto} alt="Preview" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--bifa-yellow)' }} />
+
+            <div className="form-section">
+              <h2 className="section-title">Playing Profile</h2>
+
+              <div className="form-group">
+                <label className="form-label">Profile Photo</label>
+                <input
+                  ref={galleryInputRef}
+                  type="file"
+                  style={{ display: 'none' }}
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                  required
+                />
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  style={{ display: 'none' }}
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handlePhotoUpload}
+                />
+                <div className="photo-grid">
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => galleryInputRef.current?.click()}
+                  >
+                    <GalleryIcon />
+                    Choose Photo
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => cameraInputRef.current?.click()}
+                  >
+                    <CameraIcon />
+                    Open Camera
+                  </button>
+                </div>
+                {isPhotoProcessing && (
+                  <small className="field-hint">Optimizing photo...</small>
+                )}
+                {formData.profilePhoto && (
+                  <div className="photo-preview">
+                    <img src={formData.profilePhoto} alt="Preview" />
+                  </div>
+                )}
+              </div>
+
+              <div className="form-group">
+                <div className="position-label-wrap">
+                  <label className="form-label">Positions</label>
+                  <span className="position-counter">{formData.positions.length}/3</span>
+                </div>
+                <div className="position-grid">
+                  {POSITIONS.map(pos => {
+                    const isSelected = formData.positions.includes(pos);
+                    const isDisabled = !isSelected && formData.positions.length >= 3;
+                    return (
+                      <div
+                        key={pos}
+                        className={`position-chip ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`}
+                        onClick={() => { if (!isDisabled) togglePosition(pos) }}
+                      >
+                        {pos}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {error && (
+              <div className="error-banner" role="alert">
+                <AlertIcon />
+                <span>{error}</span>
               </div>
             )}
-          </div>
 
-          <div className="form-group">
-            <label className="form-label">
-              Positions (Max 3) - Selected: {formData.positions.length}/3
-            </label>
-            <div className="position-grid">
-              {POSITIONS.map(pos => {
-                const isSelected = formData.positions.includes(pos);
-                const isDisabled = !isSelected && formData.positions.length >= 3;
-                return (
-                  <div
-                    key={pos}
-                    className={`position-chip ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`}
-                    onClick={() => { if (!isDisabled) togglePosition(pos) }}
-                  >
-                    {pos}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+            <button type="submit" className="btn-primary btn-shine" disabled={isSubmitting || isPhotoProcessing}>
+              {isSubmitting && <span className="btn-spinner" />}
+              {isSubmitting ? 'Submitting...' : 'Submit Registration'}
+            </button>
+          </form>
+        </div>
 
-          {error && <div className="error-text" style={{ marginBottom: '20px' }}>{error}</div>}
-
-          <button type="submit" className="btn-primary" disabled={isSubmitting || isPhotoProcessing}>
-            {isSubmitting ? 'Submitting...' : 'Submit Registration'}
-          </button>
-        </form>
+        <p className="auth-switch">
+          Already have an account? <Link to="/login">Login</Link>
+        </p>
       </div>
     </div>
   );
