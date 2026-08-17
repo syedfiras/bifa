@@ -1,3 +1,4 @@
+"use strict";
 require('dotenv').config();
 const Admin = require('./models/Admin');
 const run = async () => {

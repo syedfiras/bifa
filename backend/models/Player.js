@@ -40,6 +40,8 @@ const mapRow = (row) => ({
     matchesPlayed: row.matches_played || 0,
     goals: row.goals || 0,
     assists: row.assists || 0,
+    goalsConceded: row.goals_conceded || 0,
+    cleanSheets: row.clean_sheets || 0,
     inStats: row.in_stats || false,
     password: row.password
 });
@@ -62,6 +64,8 @@ class PlayerRecord {
         this.matchesPlayed = row.matches_played || 0;
         this.goals = row.goals || 0;
         this.assists = row.assists || 0;
+        this.goalsConceded = row.goals_conceded || 0;
+        this.cleanSheets = row.clean_sheets || 0;
         this.inStats = row.in_stats || false;
         this.password = row.password;
     }
@@ -76,6 +80,8 @@ class PlayerRecord {
                 matches_played: this.matchesPlayed,
                 goals: this.goals,
                 assists: this.assists,
+                goals_conceded: this.goalsConceded,
+                clean_sheets: this.cleanSheets,
                 in_stats: this.inStats
             })
             .eq('id', this.id)
@@ -150,7 +156,9 @@ class Player {
             age_category: ageCategory, // Use auto-calculated or manually provided value
             matches_played: payload.matchesPlayed !== undefined ? payload.matchesPlayed : 0,
             goals: payload.goals !== undefined ? payload.goals : 0,
-            assists: payload.assists !== undefined ? payload.assists : 0
+            assists: payload.assists !== undefined ? payload.assists : 0,
+            goals_conceded: payload.goalsConceded !== undefined ? payload.goalsConceded : 0,
+            clean_sheets: payload.cleanSheets !== undefined ? payload.cleanSheets : 0
         };
 
         if (payload.dateOfBirth !== undefined) {
@@ -197,6 +205,8 @@ class Player {
         if (update.matchesPlayed !== undefined) fields.matches_played = update.matchesPlayed;
         if (update.goals !== undefined) fields.goals = update.goals;
         if (update.assists !== undefined) fields.assists = update.assists;
+        if (update.goalsConceded !== undefined) fields.goals_conceded = update.goalsConceded;
+        if (update.cleanSheets !== undefined) fields.clean_sheets = update.cleanSheets;
         if (update.inStats !== undefined) fields.in_stats = update.inStats;
         if (update.password !== undefined) fields.password = update.password;
         

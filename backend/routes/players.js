@@ -24,7 +24,7 @@ const generateAccessPass = () => {
 
 router.post('/', protect, async (req, res) => {
     try {
-        const { fullName, email, phone, dateOfBirth, positions, profilePhoto, ageCategory, joiningYear, matchesPlayed, goals, assists } = req.body;
+        const { fullName, email, phone, dateOfBirth, positions, profilePhoto, ageCategory, joiningYear, matchesPlayed, goals, assists, goalsConceded, cleanSheets } = req.body;
 
         if (!fullName || !fullName.trim()) {
             return res.status(400).json({ success: false, message: 'fullName is required' });
@@ -37,7 +37,7 @@ router.post('/', protect, async (req, res) => {
         }
 
         const stats = {};
-        for (const key of ['matchesPlayed', 'goals', 'assists']) {
+        for (const key of ['matchesPlayed', 'goals', 'assists', 'goalsConceded', 'cleanSheets']) {
             if (req.body[key] === undefined || req.body[key] === null || req.body[key] === '') {
                 stats[key] = 0;
             } else {
@@ -276,16 +276,16 @@ router.put('/:id/decline', protect, async (req, res) => {
 
 router.put('/:id/stats', protect, async (req, res) => {
     try {
-        const { matchesPlayed, goals, assists } = req.body;
+        const { matchesPlayed, goals, assists, goalsConceded, cleanSheets } = req.body;
 
         const toInt = (value) => value === undefined || value === null ? undefined : Number(value);
-        const values = { matchesPlayed: toInt(matchesPlayed), goals: toInt(goals), assists: toInt(assists) };
+        const values = { matchesPlayed: toInt(matchesPlayed), goals: toInt(goals), assists: toInt(assists), goalsConceded: toInt(goalsConceded), cleanSheets: toInt(cleanSheets) };
 
-        if (['matchesPlayed', 'goals', 'assists'].every(key => values[key] === undefined)) {
-            return res.status(400).json({ success: false, message: 'Provide at least one of matchesPlayed, goals, assists' });
+        if (['matchesPlayed', 'goals', 'assists', 'goalsConceded', 'cleanSheets'].every(key => values[key] === undefined)) {
+            return res.status(400).json({ success: false, message: 'Provide at least one of matchesPlayed, goals, assists, goalsConceded, cleanSheets' });
         }
 
-        for (const key of ['matchesPlayed', 'goals', 'assists']) {
+        for (const key of ['matchesPlayed', 'goals', 'assists', 'goalsConceded', 'cleanSheets']) {
             if (values[key] !== undefined && (!Number.isInteger(values[key]) || values[key] < 0)) {
                 return res.status(400).json({ success: false, message: `${key} must be a non-negative integer` });
             }

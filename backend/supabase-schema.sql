@@ -48,6 +48,12 @@ alter table public.players
     add column if not exists password text;
 
 alter table public.players
+    add column if not exists goals_conceded integer not null default 0 check (goals_conceded >= 0);
+
+alter table public.players
+    add column if not exists clean_sheets integer not null default 0 check (clean_sheets >= 0);
+
+alter table public.players
     alter column phone drop not null;
 
 alter table public.players
@@ -63,4 +69,14 @@ create table if not exists public.referees (
     status text not null default 'active' check (status in ('active', 'inactive')),
     added_by uuid references public.admins(id) on delete set null,
     created_at timestamptz not null default now()
+);
+
+create table if not exists public.attendance (
+    id uuid primary key default gen_random_uuid(),
+    player_id uuid not null references public.players(id) on delete cascade,
+    practice_date date not null,
+    status text not null check (status in ('present', 'absent')),
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    unique (player_id, practice_date)
 );

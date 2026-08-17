@@ -32,6 +32,12 @@ const TrophyIcon = () => (
   </svg>
 );
 
+const ShieldIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+);
+
 const formatDate = (dateString) => {
   if (!dateString) return '—';
   return new Date(dateString).toLocaleDateString('en-US', {
@@ -64,6 +70,21 @@ export default function Stats() {
     { label: 'Goal Involvement', value: involvement, icon: TrophyIcon },
   ];
 
+  const isGK = (player.positions || []).includes('Goalkeeper');
+  const isDefender = (player.positions || []).some(pos => ['CB', 'LB', 'RB'].includes(pos));
+  const defensiveTotals = isGK
+    ? [
+        { label: 'Matches', value: matches, icon: ActivityIcon },
+        { label: 'Goals Conceded', value: player.goalsConceded ?? 0, icon: ShieldIcon },
+        { label: 'Clean Sheets', value: player.cleanSheets ?? 0, icon: TrophyIcon },
+      ]
+    : [
+        { label: 'Matches', value: matches, icon: ActivityIcon },
+        { label: 'Goals', value: goals, icon: TargetIcon },
+        { label: 'Assists', value: assists, icon: ZapIcon },
+        { label: 'Goals Conceded', value: player.goalsConceded ?? 0, icon: ShieldIcon },
+      ];
+
   const bars = [
     { label: 'Goals per match', value: goalsPerMatch.toFixed(2), percent: goalRate },
     { label: 'Assists per match', value: assistsPerMatch.toFixed(2), percent: assistRate },
@@ -83,7 +104,7 @@ export default function Stats() {
         <h2 className="page-title">Season Stats</h2>
         <p className="page-subtitle">Your performance analytics for BIFA {player.joiningYear || ''}</p>
         <div className="stat-grid stat-grid--4">
-          {totals.map(stat => (
+          {(isGK || isDefender ? defensiveTotals : totals).map(stat => (
             <div key={stat.label} className="stat-card">
               <span className="stat-card-icon"><stat.icon /></span>
               <span className="stat-card-value">{stat.value}</span>
@@ -92,6 +113,45 @@ export default function Stats() {
           ))}
         </div>
       </section>
+
+      {(isGK || isDefender) && matches > 0 && (
+        <section className="glass-card">
+          <h2 className="page-title" style={{ marginBottom: '18px' }}>Defensive Averages</h2>
+          {(() => {
+            const concededPerMatch = (player.goalsConceded ?? 0) / matches;
+            const cleanSheetRate = isGK ? Math.min(((player.cleanSheets ?? 0) / matches) * 100, 100) : null;
+            return (
+              <>
+                <div className="bar-row">
+                  <div className="bar-top">
+                    <span className="bar-label">Goals conceded per match</span>
+                    <span className="bar-value">{concededPerMatch.toFixed(2)}</span>
+                  </div>
+                  <div className="bar-track">
+                    <div className="bar-fill" style={{ width: `${Math.min(concededPerMatch * 100, 100)}%` }} />
+                  </div>
+                </div>
+                {cleanSheetRate !== null && (
+                  <>
+                    <div className="bar-row">
+                      <div className="bar-top">
+                        <span className="bar-label">Clean sheet rate</span>
+                        <span className="bar-value">{cleanSheetRate.toFixed(0)}%</span>
+                      </div>
+                      <div className="bar-track">
+                        <div className="bar-fill" style={{ width: `${cleanSheetRate}%` }} />
+                      </div>
+                    </div>
+                    <p className="field-hint">
+                      Clean sheet rate is capped at 100% and scales with the matches you have played.
+                    </p>
+                  </>
+                )}
+              </>
+            );
+          })()}
+        </section>
+      )}
 
       <section className="glass-card">
         <h2 className="page-title" style={{ marginBottom: '18px' }}>Per Match Averages</h2>

@@ -8,6 +8,8 @@ import { colors, spacing, radius, shadows, gradients, typography } from '../them
 
 const AGE_CATEGORIES = ['U13', 'U15', 'U17', 'U19', 'U20', 'SENIOR'];
 const SORT_OPTIONS = ['Name (A-Z)', 'Most Matches', 'Most Goals', 'Most Assists'];
+const DEF_GK_POSITIONS = ['Goalkeeper', 'CB', 'LB', 'RB'];
+const VIEW_OPTIONS = ['All Players', 'Defenders & GK'];
 const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
 
 const Dropdown = ({ label, options, selected, onSelect }) => {
@@ -55,6 +57,8 @@ const StatTile = ({ icon, value, label }) => (
 
 const StatsCard = ({ item, onPress, onEdit }) => {
   const scale = useRef(new Animated.Value(0)).current;
+  const isGK = (item.positions || []).includes('Goalkeeper');
+  const isDefender = (item.positions || []).some(pos => ['CB', 'LB', 'RB'].includes(pos));
   useEffect(() => {
     Animated.spring(scale, { toValue: 1, tension: 40, friction: 9, useNativeDriver: true }).start();
   }, []);
@@ -81,13 +85,33 @@ const StatsCard = ({ item, onPress, onEdit }) => {
               <Ionicons name="pencil" size={14} color={colors.textDark} />
             </TouchableOpacity>
           </View>
-          <View style={styles.statsRow}>
-            <StatTile icon="calendar" value={item.matchesPlayed ?? 0} label="Matches" />
-            <View style={styles.statDivider} />
-            <StatTile icon="football" value={item.goals ?? 0} label="Goals" />
-            <View style={styles.statDivider} />
-            <StatTile icon="hand-left" value={item.assists ?? 0} label="Assists" />
-          </View>
+          {isGK ? (
+            <View style={styles.statsRow}>
+              <StatTile icon="calendar" value={item.matchesPlayed ?? 0} label="Matches" />
+              <View style={styles.statDivider} />
+              <StatTile icon="shield-outline" value={item.goalsConceded ?? 0} label="Conceded" />
+              <View style={styles.statDivider} />
+              <StatTile icon="sparkles" value={item.cleanSheets ?? 0} label="Clean" />
+            </View>
+          ) : isDefender ? (
+            <View style={styles.statsRow}>
+              <StatTile icon="calendar" value={item.matchesPlayed ?? 0} label="Matches" />
+              <View style={styles.statDivider} />
+              <StatTile icon="football" value={item.goals ?? 0} label="Goals" />
+              <View style={styles.statDivider} />
+              <StatTile icon="hand-left" value={item.assists ?? 0} label="Assists" />
+              <View style={styles.statDivider} />
+              <StatTile icon="shield-outline" value={item.goalsConceded ?? 0} label="Conceded" />
+            </View>
+          ) : (
+            <View style={styles.statsRow}>
+              <StatTile icon="calendar" value={item.matchesPlayed ?? 0} label="Matches" />
+              <View style={styles.statDivider} />
+              <StatTile icon="football" value={item.goals ?? 0} label="Goals" />
+              <View style={styles.statDivider} />
+              <StatTile icon="hand-left" value={item.assists ?? 0} label="Assists" />
+            </View>
+          )}
         </LinearGradient>
       </TouchableOpacity>
     </Animated.View>
@@ -101,13 +125,14 @@ export default function StatsScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterAge, setFilterAge] = useState('All');
   const [sortBy, setSortBy] = useState(SORT_OPTIONS[0]);
+  const [view, setView] = useState(VIEW_OPTIONS[0]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [candidates, setCandidates] = useState([]);
   const [candidatesLoading, setCandidatesLoading] = useState(false);
   const [pickerSearch, setPickerSearch] = useState('');
   const [addingId, setAddingId] = useState(null);
   const [editingPlayer, setEditingPlayer] = useState(null);
-  const [statDraft, setStatDraft] = useState({ matchesPlayed: '0', goals: '0', assists: '0' });
+  const [statDraft, setStatDraft] = useState({ matchesPlayed: '0', goals: '0', assists: '0', goalsConceded: '0', cleanSheets: '0' });
   const [savingStats, setSavingStats] = useState(false);
 
   const loadPlayers = async (isRefresh = false) => {
@@ -172,6 +197,8 @@ export default function StatsScreen({ navigation }) {
       matchesPlayed: String(player.matchesPlayed ?? 0),
       goals: String(player.goals ?? 0),
       assists: String(player.assists ?? 0),
+      goalsConceded: String(player.goalsConceded ?? 0),
+      cleanSheets: String(player.cleanSheets ?? 0),
     });
     setEditingPlayer(player);
   };
@@ -185,8 +212,10 @@ export default function StatsScreen({ navigation }) {
       matchesPlayed: parse(statDraft.matchesPlayed),
       goals: parse(statDraft.goals),
       assists: parse(statDraft.assists),
+      goalsConceded: parse(statDraft.goalsConceded),
+      cleanSheets: parse(statDraft.cleanSheets),
     };
-    if ([stats.matchesPlayed, stats.goals, stats.assists].some(Number.isNaN)) {
+    if ([stats.matchesPlayed, stats.goals, stats.assists, stats.goalsConceded, stats.cleanSheets].some(Number.isNaN)) {
       Alert.alert('Invalid input', 'Stats must be non-negative whole numbers.');
       return;
     }
@@ -211,7 +240,11 @@ export default function StatsScreen({ navigation }) {
         .filter(Boolean).join(' ').toLowerCase().includes(normalizedSearch))
     : players;
 
-  const sortedPlayers = [...filteredPlayers].sort((a, b) => {
+  const viewFilteredPlayers = view === VIEW_OPTIONS[1]
+    ? filteredPlayers.filter(p => (p.positions || []).some(pos => DEF_GK_POSITIONS.includes(pos)))
+    : filteredPlayers;
+
+  const sortedPlayers = [...viewFilteredPlayers].sort((a, b) => {
     if (sortBy === 'Most Matches') return (b.matchesPlayed ?? 0) - (a.matchesPlayed ?? 0);
     if (sortBy === 'Most Goals') return (b.goals ?? 0) - (a.goals ?? 0);
     if (sortBy === 'Most Assists') return (b.assists ?? 0) - (a.assists ?? 0);
@@ -249,6 +282,19 @@ export default function StatsScreen({ navigation }) {
       <View style={styles.dropdownRow}>
         <Dropdown label="Category" options={['All', ...AGE_CATEGORIES]} selected={filterAge} onSelect={setFilterAge} />
         <Dropdown label="Sort" options={SORT_OPTIONS} selected={sortBy} onSelect={setSortBy} />
+      </View>
+
+      <View style={styles.viewToggle}>
+        {VIEW_OPTIONS.map(option => (
+          <TouchableOpacity
+            key={option}
+            style={[styles.viewToggleBtn, view === option && styles.viewToggleBtnActive]}
+            activeOpacity={0.8}
+            onPress={() => setView(option)}
+          >
+            <Text style={[styles.viewToggleText, view === option && styles.viewToggleTextActive]}>{option}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       <View style={styles.headerRow}>
@@ -369,6 +415,10 @@ export default function StatsScreen({ navigation }) {
               { key: 'matchesPlayed', label: 'Matches Played', icon: 'calendar' },
               { key: 'goals', label: 'Goals', icon: 'football' },
               { key: 'assists', label: 'Assists', icon: 'hand-left' },
+              { key: 'goalsConceded', label: 'Goals Conceded', icon: 'shield-outline' },
+              ...((editingPlayer?.positions || []).includes('Goalkeeper')
+                ? [{ key: 'cleanSheets', label: 'Clean Sheets', icon: 'sparkles' }]
+                : []),
             ].map(field => (
               <View key={field.key} style={styles.modalFieldRow}>
                 <Ionicons name={field.icon} size={16} color={colors.yellow} />
@@ -435,6 +485,15 @@ const styles = StyleSheet.create({
   dropdownLabel: { color: colors.textSecondary, fontSize: 11, marginBottom: 4, textTransform: 'uppercase', fontWeight: '700' },
   dropdownValueWrap: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   dropdownValue: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '700' },
+  viewToggle: {
+    flexDirection: 'row', marginHorizontal: spacing.lg, marginBottom: spacing.md,
+    backgroundColor: colors.bgCard, borderRadius: radius.full, padding: 3,
+    borderWidth: 1, borderColor: colors.border,
+  },
+  viewToggleBtn: { flex: 1, alignItems: 'center', paddingVertical: spacing.sm, borderRadius: radius.full },
+  viewToggleBtnActive: { backgroundColor: colors.yellow },
+  viewToggleText: { color: colors.textSecondary, fontSize: 12, fontWeight: '800' },
+  viewToggleTextActive: { color: colors.textDark },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', padding: spacing.lg },
   modalCard: { backgroundColor: colors.bg, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border },
   modalTitle: { color: colors.text, fontSize: 15, fontWeight: '800', marginBottom: spacing.sm },

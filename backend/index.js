@@ -6,6 +6,7 @@ const supabase = require('./lib/supabase');
 const authRoutes = require('./routes/auth');
 const playerRoutes = require('./routes/players');
 const refereeRoutes = require('./routes/referees');
+const attendanceRoutes = require('./routes/attendance');
 
 const app = express();
 
@@ -23,6 +24,7 @@ const verifySupabaseConnection = async () => {
 app.use('/api/auth', authRoutes);
 app.use('/api/players', playerRoutes);
 app.use('/api/referees', refereeRoutes);
+app.use('/api/attendance', attendanceRoutes);
 
 app.get('/', (req, res) => {
     res.send('API running');

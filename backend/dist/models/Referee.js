@@ -1,3 +1,4 @@
+"use strict";
 const supabase = require('../lib/supabase');
 const REF_TABLE = 'referees';
 const ADMIN_TABLE = 'admins';

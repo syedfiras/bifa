@@ -12,6 +12,7 @@ import RosterScreen from './src/screens/RosterScreen';
 import ManagePlayersScreen from './src/screens/ManagePlayersScreen';
 import PlayerDetailScreen from './src/screens/PlayerDetailScreen';
 import StatsScreen from './src/screens/StatsScreen';
+import AttendanceScreen from './src/screens/AttendanceScreen';
 import RefereesScreen from './src/screens/RefereesScreen';
 import DlicenseScreen from './src/screens/DlicenseScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
@@ -20,12 +21,13 @@ import { colors } from './src/theme';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const TAB_WIDTH = SCREEN_WIDTH / 7;
+const TAB_WIDTH = SCREEN_WIDTH / 8;
 
 const tabs = [
   { name: 'Dashboard', icon: 'home', label: 'Home' },
   { name: 'Roster', icon: 'users', label: 'Roster' },
   { name: 'Stats', icon: 'trophy', label: 'Stats' },
+  { name: 'Attendance', icon: 'calendar-check-o', label: 'Attendance' },
   { name: 'Manage', icon: 'inbox', label: 'Manage' },
   { name: 'Referees', icon: 'gavel', label: 'Officials' },
   { name: 'D-License', icon: 'id-card', label: 'D-License' },
@@ -155,6 +157,7 @@ function MainTabs({ setToken }) {
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="Roster" component={RosterStack} />
       <Tab.Screen name="Stats" component={StatsStack} />
+      <Tab.Screen name="Attendance" component={AttendanceScreen} />
       <Tab.Screen name="Manage" component={ManageStack} />
       <Tab.Screen name="Referees" component={RefereesScreen} />
       <Tab.Screen name="D-License" component={DlicenseScreen} />

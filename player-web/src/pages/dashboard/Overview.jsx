@@ -22,6 +22,12 @@ const ZapIcon = () => (
   </svg>
 );
 
+const ShieldIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+);
+
 const ChartIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="18" y1="20" x2="18" y2="10" />
@@ -57,11 +63,27 @@ const SettingsIcon = () => (
 export default function Overview() {
   const player = usePlayer();
 
-  const stats = [
-    { label: 'Matches', value: player.matchesPlayed ?? 0, icon: ActivityIcon },
-    { label: 'Goals', value: player.goals ?? 0, icon: TargetIcon },
-    { label: 'Assists', value: player.assists ?? 0, icon: ZapIcon },
-  ];
+  const isGK = (player.positions || []).includes('Goalkeeper');
+  const isDefender = (player.positions || []).some(pos => ['CB', 'LB', 'RB'].includes(pos));
+
+  const stats = isGK
+    ? [
+        { label: 'Matches', value: player.matchesPlayed ?? 0, icon: ActivityIcon },
+        { label: 'Goals Conceded', value: player.goalsConceded ?? 0, icon: ShieldIcon },
+        { label: 'Clean Sheets', value: player.cleanSheets ?? 0, icon: TargetIcon },
+      ]
+    : isDefender
+      ? [
+          { label: 'Matches', value: player.matchesPlayed ?? 0, icon: ActivityIcon },
+          { label: 'Goals', value: player.goals ?? 0, icon: TargetIcon },
+          { label: 'Assists', value: player.assists ?? 0, icon: ZapIcon },
+          { label: 'Goals Conceded', value: player.goalsConceded ?? 0, icon: ShieldIcon },
+        ]
+      : [
+          { label: 'Matches', value: player.matchesPlayed ?? 0, icon: ActivityIcon },
+          { label: 'Goals', value: player.goals ?? 0, icon: TargetIcon },
+          { label: 'Assists', value: player.assists ?? 0, icon: ZapIcon },
+        ];
 
   const quickLinks = [
     { to: '/dashboard/stats', title: 'Season Stats', desc: 'View your performance analytics', icon: ChartIcon },
@@ -104,7 +126,7 @@ export default function Overview() {
       <section>
         <h2 className="page-title">Season Overview</h2>
         <p className="page-subtitle">Your career numbers at a glance</p>
-        <div className="stat-grid">
+        <div className={`stat-grid ${isDefender ? 'stat-grid--4' : ''}`}>
           {stats.map(stat => (
             <div key={stat.label} className="stat-card">
               <span className="stat-card-icon"><stat.icon /></span>
