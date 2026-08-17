@@ -8,6 +8,7 @@ import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import PlayerIdCard from '../components/PlayerIdCard';
+import StatTile from '../components/StatTile';
 import { colors, spacing, radius, typography, shadows, gradients } from '../theme';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
@@ -24,14 +25,6 @@ const InfoRow = ({ icon, label, value, valueColor }) => (
   </View>
 );
 
-const StatTile = ({ icon, value, label }) => (
-  <View style={styles.statTile}>
-    <Ionicons name={icon} size={16} color={colors.yellow} />
-    <Text style={styles.statValue}>{value}</Text>
-    <Text style={styles.statLabel}>{label}</Text>
-  </View>
-);
-
 export default function PlayerDetailScreen({ route, navigation }) {
   const { id } = route.params;
   const [player, setPlayer] = useState(null);
@@ -42,6 +35,8 @@ export default function PlayerDetailScreen({ route, navigation }) {
   const [statDraft, setStatDraft] = useState({ matchesPlayed: '0', goals: '0', assists: '0' });
   const headerAnim = useRef(new Animated.Value(0)).current;
 
+  const showStats = route.params?.fromStats === true;
+
   const loadPlayer = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -49,9 +44,7 @@ export default function PlayerDetailScreen({ route, navigation }) {
         headers: { Authorization: `Bearer ${token}` }
       });
       setPlayer(res.data.data);
-      Animated.parallel([
-        Animated.timing(headerAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
-      ]).start();
+      Animated.timing(headerAnim, { toValue: 1, duration: 250, useNativeDriver: true }).start();
     } catch (e) { Alert.alert('Error', 'Failed to load details'); }
     setLoading(false);
   };
@@ -174,7 +167,6 @@ export default function PlayerDetailScreen({ route, navigation }) {
   );
 
   const statusColor = player.status === 'accepted' ? colors.green : colors.orange;
-  const showStats = navigation.getState?.()?.routes?.[0]?.name === 'StatsList';
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: spacing.xxxl }}>
@@ -257,7 +249,7 @@ export default function PlayerDetailScreen({ route, navigation }) {
       <View style={styles.actionButtons}>
         <TouchableOpacity onPress={handleMatchOfficial} activeOpacity={0.75} style={{ flex: 1 }}>
           <LinearGradient colors={gradients.card} style={styles.linkBtn}>
-            <Ionicons name="gavel" size={18} color={colors.yellow} />
+            <Ionicons name="whistle" size={18} color={colors.yellow} />
             <Text style={styles.linkBtnText}>Match Official</Text>
           </LinearGradient>
         </TouchableOpacity>
@@ -388,7 +380,7 @@ const styles = StyleSheet.create({
   statusDot: { width: 5, height: 5, borderRadius: 2.5, marginRight: spacing.xs },
   ageTag: { color: colors.textSecondary, fontSize: 12, fontWeight: '600', backgroundColor: colors.bgCard, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border },
   infoCard: {
-    backgroundColor: colors.bgLight, margin: spacing.xl, padding: spacing.xl,
+    backgroundColor: colors.bgLight, margin: spacing.lg, padding: spacing.lg,
     borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, ...shadows.md,
   },
   infoRow: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: spacing.md },
@@ -396,12 +388,12 @@ const styles = StyleSheet.create({
   infoLabel: { ...typography.label, color: colors.textSecondary, marginBottom: 2 },
   infoValue: { color: colors.text, fontSize: 16, fontWeight: '600', marginTop: 1 },
   passCard: {
-    flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.xl,
-    padding: spacing.xl, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.yellow,
+    flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.lg,
+    padding: spacing.lg, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.yellow,
     ...shadows.md,
   },
   statsCard: {
-    marginHorizontal: spacing.xl, borderRadius: radius.lg, overflow: 'hidden',
+    marginHorizontal: spacing.lg, borderRadius: radius.lg, overflow: 'hidden',
     borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgLight, ...shadows.md,
   },
   statsHeader: {
@@ -415,12 +407,9 @@ const styles = StyleSheet.create({
   },
   statsEditText: { color: colors.textDark, fontSize: 11, fontWeight: '900', letterSpacing: 0.8 },
   statsRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgCard },
-  statTile: { flex: 1, alignItems: 'center', paddingVertical: spacing.lg },
-  statValue: { color: colors.text, fontSize: 22, fontWeight: '900', marginTop: 4 },
-  statLabel: { color: colors.textSecondary, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 2 },
   statDivider: { width: 1, height: 34, backgroundColor: colors.border },
-  modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', padding: spacing.xl },
-  modalCard: { backgroundColor: colors.bgLight, borderRadius: radius.lg, padding: spacing.xl, borderWidth: 1, borderColor: colors.border, ...shadows.lg },
+  modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', padding: spacing.lg },
+  modalCard: { backgroundColor: colors.bgLight, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border, ...shadows.lg },
   modalTitle: { color: colors.text, fontSize: 18, fontWeight: '900' },
   modalSubtitle: { color: colors.textSecondary, fontSize: 13, marginTop: 2, marginBottom: spacing.lg },
   modalFieldRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md },
@@ -439,7 +428,7 @@ const styles = StyleSheet.create({
   passIconWrap: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.yellowDim, justifyContent: 'center', alignItems: 'center', marginRight: spacing.md },
   passLabel: { ...typography.label, color: colors.yellow, marginBottom: 2 },
   passValue: { color: colors.yellow, fontSize: 22, fontWeight: '900', letterSpacing: 2 },
-  actionButtons: { flexDirection: 'row', marginHorizontal: spacing.xl, marginTop: spacing.md, gap: spacing.md },
+  actionButtons: { flexDirection: 'row', marginHorizontal: spacing.lg, marginTop: spacing.md, gap: spacing.md },
   linkBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     paddingVertical: spacing.md, borderRadius: radius.md,
@@ -447,7 +436,7 @@ const styles = StyleSheet.create({
   },
   linkBtnText: { color: colors.yellow, fontSize: 13, fontWeight: '700' },
   linkedCard: {
-    flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.xl,
+    flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.lg,
     padding: spacing.lg, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     marginTop: spacing.md, backgroundColor: colors.bgLight,
   },
@@ -455,7 +444,7 @@ const styles = StyleSheet.create({
   linkedTitle: { ...typography.label, color: colors.yellow, marginBottom: 4 },
   linkedName: { color: colors.text, fontSize: 15, fontWeight: '800' },
   linkedSub: { color: colors.textSecondary, marginTop: 2, fontSize: 12 },
-  actionContainer: { flexDirection: 'row', paddingHorizontal: spacing.xl, marginTop: spacing.lg, gap: spacing.md },
+  actionContainer: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginTop: spacing.lg, gap: spacing.md },
   actionBtn: { flexDirection: 'row', padding: spacing.lg, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', ...shadows.md },
   actionBtnText: { color: colors.text, fontWeight: 'bold', fontSize: 15 },
 });

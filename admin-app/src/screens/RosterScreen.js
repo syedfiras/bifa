@@ -1,13 +1,15 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Image, TextInput, Animated, Modal, Alert, Platform } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Image, TextInput, Alert, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import Dropdown from '../components/Dropdown';
+import EmptyState from '../components/EmptyState';
 import { buildHtml, getAssetBase64, SIGNATURE_ASSET } from '../components/PlayerIdCard';
-import { colors, spacing, radius, shadows, gradients } from '../theme';
+import { colors, spacing, radius, shadows, gradients, typography } from '../theme';
 
 const POSITIONS = ['All', 'Goalkeeper', 'CB', 'LB', 'RB', 'CM', 'CDM', 'CAM', 'LW', 'RW', 'CF', 'ST'];
 const AGE_CATEGORIES = ['All', 'U13', 'U15', 'U17', 'U19', 'U20', 'SENIOR'];
@@ -15,88 +17,41 @@ const SORT_OPTIONS = ['Name (A-Z)', 'Reg. Date'];
 const CARD_TYPE_OPTIONS = ['Normal', 'Gold'];
 const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
 
-const Dropdown = ({ label, options, selected, onSelect }) => {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <TouchableOpacity style={styles.dropdownBtn} onPress={() => setOpen(true)} activeOpacity={0.8}>
-        <Text style={styles.dropdownLabel}>{label}</Text>
-        <View style={styles.dropdownValueWrap}>
-          <Text style={styles.dropdownValue} numberOfLines={1} ellipsizeMode="tail">{selected || 'All'}</Text>
-          <Ionicons name="chevron-down" size={18} color={colors.textMuted} />
+const PlayerCard = ({ item, onPress, onSelect, selected, selectMode }) => (
+  <TouchableOpacity activeOpacity={0.75} onPress={selectMode ? () => onSelect(item._id) : onPress}>
+    <LinearGradient colors={gradients.card} style={[styles.card, selected && styles.cardSelected]}>
+      <View style={styles.cardContent}>
+        {selectMode && (
+          <TouchableOpacity
+            style={styles.checkboxWrap}
+            onPress={() => onSelect(item._id)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <View style={[styles.checkbox, selected && styles.checkboxActive]}>
+              {selected && <Ionicons name="checkmark" size={14} color={colors.textDark} />}
+            </View>
+          </TouchableOpacity>
+        )}
+        {item.profilePhoto ? (
+          <Image source={{ uri: item.profilePhoto }} style={styles.avatar} />
+        ) : (
+          <View style={[styles.avatar, styles.avatarPlaceholder]}>
+            <Ionicons name="person" size={22} color={colors.yellow} />
+          </View>
+        )}
+        <View style={styles.info}>
+          <Text style={styles.name} numberOfLines={1}>{item.fullName}</Text>
+          <Text style={styles.details}>
+            {(item.positions || []).join(', ')} <Text style={{ color: colors.yellow }}>•</Text> {item.ageCategory || 'U20'}
+          </Text>
         </View>
-      </TouchableOpacity>
-      <Modal visible={open} transparent animationType="fade">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setOpen(false)}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>{label}</Text>
-            {options.map(option => (
-              <TouchableOpacity
-                key={option}
-                style={[styles.modalOption, selected === option && styles.modalOptionActive]}
-                activeOpacity={0.7}
-                onPress={() => {
-                  onSelect(option);
-                  setOpen(false);
-                }}
-              >
-                <Text style={[styles.modalOptionText, selected === option && styles.modalOptionTextActive]}>{option}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
-    </>
-  );
-};
-
-const PlayerCard = ({ item, onPress, onSelect, selected, selectMode }) => {
-  const scale = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.spring(scale, { toValue: 1, tension: 40, friction: 9, useNativeDriver: true }).start();
-  }, []);
-
-  return (
-    <Animated.View style={{ transform: [{ scale }] }}>
-      <TouchableOpacity
-        activeOpacity={0.75}
-        onPress={selectMode ? () => onSelect(item._id) : onPress}
-      >
-        <LinearGradient colors={gradients.card} style={[styles.card, selected && styles.cardSelected]}>
-          <View style={styles.cardContent}>
-            {selectMode && (
-              <TouchableOpacity
-                style={styles.checkboxWrap}
-                onPress={() => onSelect(item._id)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <View style={[styles.checkbox, selected && styles.checkboxActive]}>
-                  {selected && <Ionicons name="checkmark" size={14} color={colors.textDark} />}
-                </View>
-              </TouchableOpacity>
-            )}
-            {item.profilePhoto ? (
-              <Image source={{ uri: item.profilePhoto }} style={styles.avatar} />
-            ) : (
-              <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                <Ionicons name="person" size={22} color={colors.yellow} />
-              </View>
-            )}
-            <View style={styles.info}>
-              <Text style={styles.name} numberOfLines={1}>{item.fullName}</Text>
-              <Text style={styles.details}>
-                {(item.positions || []).join(', ')} <Text style={{ color: colors.yellow }}>•</Text> {item.ageCategory || 'U20'}
-              </Text>
-            </View>
-            <View style={styles.chevronWrap}>
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-            </View>
-          </View>
-        </LinearGradient>
-      </TouchableOpacity>
-    </Animated.View>
-  );
-};
+        <View style={styles.chevronWrap}>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        </View>
+      </View>
+    </LinearGradient>
+  </TouchableOpacity>
+);
 
 export default function RosterScreen({ navigation }) {
   const [players, setPlayers] = useState([]);
@@ -236,9 +191,11 @@ export default function RosterScreen({ navigation }) {
         <Dropdown label="Category" options={AGE_CATEGORIES} selected={filterAge} onSelect={setFilterAge} />
       </View>
 
-      <TouchableOpacity style={styles.selectToggleBtn} onPress={toggleSelectMode} activeOpacity={0.8}>
-        <Text style={styles.selectToggleText}>{selectMode ? 'Cancel' : 'Select'}</Text>
-      </TouchableOpacity>
+      <View style={styles.selectToggleRow}>
+        <TouchableOpacity style={styles.selectToggleBtn} onPress={toggleSelectMode} activeOpacity={0.8}>
+          <Text style={styles.selectToggleText}>{selectMode ? 'Cancel' : 'Select'}</Text>
+        </TouchableOpacity>
+      </View>
 
       {selectMode && (
         <>
@@ -279,7 +236,7 @@ export default function RosterScreen({ navigation }) {
             activeOpacity={0.8}
           >
             {downloadingAll ? (
-              <ActivityIndicator size="small" color={colors.textDark} />
+              <ActivityIndicator size="small" color={selectedIds.length === 0 ? colors.textMuted : colors.textDark} />
             ) : (
               <Ionicons name="download-outline" size={18} color={selectedIds.length === 0 ? colors.textMuted : colors.textDark} />
             )}
@@ -295,21 +252,15 @@ export default function RosterScreen({ navigation }) {
           <ActivityIndicator size="large" color={colors.yellow} />
         </View>
       ) : (
-          <FlatList
-            data={filteredPlayers}
-            keyExtractor={item => item._id}
-            renderItem={({ item }) => <PlayerCard item={item} selected={selectedIds.includes(item._id)} selectMode={selectMode} onSelect={toggleSelect} onPress={() => navigation.navigate('PlayerDetail', { id: item._id })} />}
+        <FlatList
+          data={filteredPlayers}
+          keyExtractor={item => item._id}
+          renderItem={({ item }) => <PlayerCard item={item} selected={selectedIds.includes(item._id)} selectMode={selectMode} onSelect={toggleSelect} onPress={() => navigation.navigate('PlayerDetail', { id: item._id })} />}
           contentContainerStyle={styles.list}
           refreshing={refreshing}
           onRefresh={() => { setRefreshing(true); loadPlayers(true); }}
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <View style={styles.emptyIconWrap}>
-                <Ionicons name="search" size={32} color={colors.textMuted} />
-              </View>
-              <Text style={styles.emptyTitle}>No players found</Text>
-              <Text style={styles.emptySub}>Try adjusting your filters or search query</Text>
-            </View>
+            <EmptyState icon="search" title="No players found" subtitle="Try adjusting your filters or search query" />
           }
         />
       )}
@@ -328,36 +279,26 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '600', paddingVertical: 0, marginLeft: spacing.sm },
   clearBtn: { padding: spacing.xs },
   dropdownRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.lg, gap: spacing.sm, marginBottom: spacing.sm },
+  selectToggleRow: { paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
+  selectToggleBtn: {
+    flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end',
+    paddingVertical: 8, paddingHorizontal: spacing.lg, borderRadius: radius.full,
+    backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, gap: spacing.xs,
+  },
+  selectToggleText: { ...typography.caption, fontWeight: '800' },
   cardTypeRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, marginBottom: spacing.sm, gap: spacing.sm },
-  cardTypeLabel: { color: colors.textSecondary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', marginRight: spacing.xs },
+  cardTypeLabel: { ...typography.label, marginRight: spacing.xs },
   cardTypeChip: { paddingVertical: 6, paddingHorizontal: 16, borderRadius: radius.full, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border },
   cardTypeChipActive: { backgroundColor: colors.yellow, borderColor: colors.yellow },
   cardTypeChipText: { color: colors.textSecondary, fontWeight: '700', fontSize: 12 },
   cardTypeChipTextActive: { color: colors.textDark },
-  selectToggleBtn: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end', marginHorizontal: spacing.lg, marginBottom: spacing.sm, paddingVertical: 10, paddingHorizontal: 20, borderRadius: radius.md, backgroundColor: colors.yellow, gap: spacing.xs },
-  selectToggleText: { color: colors.textDark, fontSize: 14, fontWeight: '800' },
-  downloadBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginHorizontal: spacing.lg, marginBottom: spacing.md, paddingVertical: 12, borderRadius: radius.md, backgroundColor: colors.yellow, gap: spacing.sm },
+  downloadBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    marginHorizontal: spacing.lg, marginBottom: spacing.md, paddingVertical: 12,
+    borderRadius: radius.md, backgroundColor: colors.yellow, gap: spacing.sm,
+  },
   downloadBtnDisabled: { backgroundColor: colors.bgCard },
   downloadBtnText: { color: colors.textDark, fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.8 },
-  dropdownBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: radius.full,
-    backgroundColor: colors.bgCard,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  dropdownLabel: { color: colors.textSecondary, fontSize: 11, marginBottom: 4, textTransform: 'uppercase', fontWeight: '700' },
-  dropdownValueWrap: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  dropdownValue: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '700' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', padding: spacing.lg },
-  modalCard: { backgroundColor: colors.bg, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border },
-  modalTitle: { color: colors.text, fontSize: 15, fontWeight: '800', marginBottom: spacing.sm },
-  modalOption: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.md, marginBottom: spacing.xs },
-  modalOptionActive: { backgroundColor: colors.yellowDim },
-  modalOptionText: { color: colors.textSecondary, fontSize: 14 },
-  modalOptionTextActive: { color: colors.text, fontWeight: '800' },
   loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   list: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.xxl },
   card: { borderRadius: radius.lg, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', ...shadows.md },
@@ -376,8 +317,4 @@ const styles = StyleSheet.create({
   checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, borderColor: colors.border, backgroundColor: 'transparent', justifyContent: 'center', alignItems: 'center' },
   checkboxActive: { backgroundColor: colors.yellow, borderColor: colors.yellow },
   cardSelected: { borderColor: colors.yellow, ...shadows.yellow },
-  empty: { alignItems: 'center', marginTop: 60 },
-  emptyIconWrap: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.bgCard, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.lg },
-  emptyTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
-  emptySub: { color: colors.textMuted, fontSize: 13, marginTop: spacing.xs, textAlign: 'center' },
 });

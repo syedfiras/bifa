@@ -6,29 +6,38 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 import { Asset } from 'expo-asset';
+import { colors, spacing, radius, shadows } from '../theme';
 
 export const SIGNATURE_ASSET = require('../../assets/images/signbifa.png');
+
+const GOLD = {
+    accent: '#ffd76a',
+    text: '#15110a',
+    bgStart: '#f9d56a',
+    bgEnd: '#ab7f13',
+    panel: 'rgba(255,215,106,0.28)',
+};
 
 const CARD_TYPES = {
     normal: {
         label: 'Normal Card',
         passLabel: 'Valid ID Card',
         fileLabel: 'BIFA ID Card',
-        border: '#f4ea26',
-        accent: '#f4ea26',
-        bgStart: '#1a1a1a',
-        bgEnd: '#0c0c0c',
+        border: colors.yellow,
+        accent: colors.yellow,
+        bgStart: colors.bgLight,
+        bgEnd: colors.bg,
         panel: 'rgba(244,234,38,0.12)',
     },
     gold: {
         label: 'Gold Card',
         passLabel: 'Gold Pass',
         fileLabel: 'BIFA Gold Pass',
-        border: '#ffd76a',
-        accent: '#ffd76a',
-        bgStart: '#f9d56a',
-        bgEnd: '#ab7f13',
-        panel: 'rgba(255,215,106,0.28)',
+        border: GOLD.accent,
+        accent: GOLD.accent,
+        bgStart: GOLD.bgStart,
+        bgEnd: GOLD.bgEnd,
+        panel: GOLD.panel,
     },
 };
 
@@ -253,8 +262,8 @@ const PlayerIdCard = ({ player }) => {
                     activeOpacity={0.8}
                 >
                     {downloading
-                        ? <ActivityIndicator size="small" color="#0c0c0c" />
-                        : <Ionicons name="download" size={20} color="#0c0c0c" />
+                        ? <ActivityIndicator size="small" color={colors.textDark} />
+                        : <Ionicons name="download" size={20} color={colors.textDark} />
                     }
                 </TouchableOpacity>
             </View>
@@ -269,7 +278,7 @@ const PlayerIdCard = ({ player }) => {
                             activeOpacity={0.8}
                             style={[styles.typeBtn, selected && styles.typeBtnActive, type === 'gold' && selected && styles.goldTypeBtnActive]}
                         >
-                            <Ionicons name={type === 'gold' ? 'ribbon' : 'id-card-outline'} size={16} color={selected ? '#0c0c0c' : config.accent} />
+                            <Ionicons name={type === 'gold' ? 'ribbon' : 'id-card-outline'} size={16} color={selected ? colors.textDark : config.accent} />
                             <Text style={[styles.typeBtnText, selected && styles.typeBtnTextActive, type === 'gold' && !selected && styles.goldText]}>{config.label}</Text>
                         </TouchableOpacity>
                     );
@@ -318,7 +327,7 @@ const PlayerIdCard = ({ player }) => {
                             <Text style={[styles.labelText, isGold && styles.goldText]}>Status</Text>
                         </View>
                         <Text style={[styles.valueText, {
-                            color: player.status === 'accepted' ? '#4CAF50' : '#f39c12',
+                            color: player.status === 'accepted' ? colors.green : colors.orange,
                             textTransform: 'uppercase', fontWeight: '900'
                         }]}>{player.status}</Text>
                     </View>
@@ -348,88 +357,88 @@ const PlayerIdCard = ({ player }) => {
 };
 
 const styles = StyleSheet.create({
-    container: { margin: 20 },
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
-    headerTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
+    container: { margin: spacing.xl },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
+    headerTitle: { color: colors.text, fontSize: 20, fontWeight: 'bold' },
     downloadBtn: {
-        backgroundColor: '#f4ea26', width: 40, height: 40, borderRadius: 20,
+        backgroundColor: colors.yellow, width: 40, height: 40, borderRadius: 20,
         justifyContent: 'center', alignItems: 'center', elevation: 3,
     },
-    goldDownloadBtn: { backgroundColor: '#ffd76a' },
-    typeSelector: { flexDirection: 'row', gap: 10, marginBottom: 15 },
+    goldDownloadBtn: { backgroundColor: GOLD.accent },
+    typeSelector: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg },
     typeBtn: {
-        flex: 1, minHeight: 44, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(244,234,38,0.35)',
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+        flex: 1, minHeight: 44, borderRadius: radius.md, borderWidth: 1, borderColor: colors.yellowGlow,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
         backgroundColor: 'rgba(255,255,255,0.04)',
     },
-    typeBtnActive: { backgroundColor: '#f4ea26', borderColor: '#f4ea26' },
-    goldTypeBtnActive: { backgroundColor: '#ffd76a', borderColor: '#ffd76a' },
-    typeBtnText: { color: '#f4ea26', fontWeight: '800', fontSize: 12 },
-    typeBtnTextActive: { color: '#0c0c0c' },
+    typeBtnActive: { backgroundColor: colors.yellow, borderColor: colors.yellow },
+    goldTypeBtnActive: { backgroundColor: GOLD.accent, borderColor: GOLD.accent },
+    typeBtnText: { color: colors.yellow, fontWeight: '800', fontSize: 12 },
+    typeBtnTextActive: { color: colors.textDark },
     idCard: {
-        width: '100%', aspectRatio: 0.63, borderRadius: 16, overflow: 'hidden',
+        width: '100%', aspectRatio: 0.63, borderRadius: radius.lg, overflow: 'hidden',
         elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3, shadowRadius: 8, borderWidth: 2, borderColor: '#f4ea26',
+        shadowOpacity: 0.3, shadowRadius: 8, borderWidth: 2, borderColor: colors.yellow,
     },
-    goldIdCard: { borderColor: '#ffd76a', shadowColor: '#ffd76a' },
+    goldIdCard: { borderColor: GOLD.accent, shadowColor: GOLD.accent },
     goldSheen: {
         position: 'absolute', top: 0, right: -60, width: 150, height: '120%',
         backgroundColor: 'rgba(255,255,255,0.12)', transform: [{ rotate: '18deg' }],
     },
     cardHeader: {
         flexDirection: 'row',
-        padding: 20,
+        padding: spacing.xl,
         borderBottomWidth: 2,
-        borderBottomColor: '#f4ea26',
+        borderBottomColor: colors.yellow,
     },
-    goldCardHeader: { borderBottomColor: '#ffd76a', backgroundColor: 'rgba(255,215,106,0.15)' },
-    photoContainer: { marginRight: 15 },
-    playerPhoto: { width: 80, height: 100, borderRadius: 8, borderWidth: 2, borderColor: '#f4ea26' },
+    goldCardHeader: { borderBottomColor: GOLD.accent, backgroundColor: 'rgba(255,215,106,0.15)' },
+    photoContainer: { marginRight: spacing.lg },
+    playerPhoto: { width: 80, height: 100, borderRadius: radius.sm, borderWidth: 2, borderColor: colors.yellow },
     photoPlaceholder: {
-        width: 80, height: 100, borderRadius: 8,
-        backgroundColor: '#1a1a1a', borderWidth: 2, borderColor: '#f4ea26',
+        width: 80, height: 100, borderRadius: radius.sm,
+        backgroundColor: colors.bgLight, borderWidth: 2, borderColor: colors.yellow,
         justifyContent: 'center', alignItems: 'center',
     },
     headerInfo: { flex: 1, minWidth: 0, justifyContent: 'center' },
     goldHeaderInfo: {
         backgroundColor: 'rgba(255,215,106,0.32)',
-        borderRadius: 10,
+        borderRadius: radius.md,
         paddingVertical: 10,
-        paddingHorizontal: 12,
+        paddingHorizontal: spacing.md,
     },
-    playerName: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 4, flexShrink: 1 },
-    goldPlayerName: { color: '#15110a' },
-    playerPosition: { color: '#f4ea26', fontSize: 14, fontWeight: '600', marginBottom: 2 },
-    playerCategory: { color: '#fff', fontSize: 12, opacity: 0.8 },
-    goldPlayerCategory: { color: '#15110a', opacity: 0.85 },
-    passLabel: { color: '#f4ea26', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.4, marginTop: 6 },
-    cardBody: { flex: 1, padding: 20 },
+    playerName: { color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 4, flexShrink: 1 },
+    goldPlayerName: { color: GOLD.text },
+    playerPosition: { color: colors.yellow, fontSize: 14, fontWeight: '600', marginBottom: 2 },
+    playerCategory: { color: colors.text, fontSize: 12, opacity: 0.8 },
+    goldPlayerCategory: { color: GOLD.text, opacity: 0.85 },
+    passLabel: { color: colors.yellow, fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.4, marginTop: 6 },
+    cardBody: { flex: 1, padding: spacing.xl },
     goldCardBody: { backgroundColor: 'rgba(255,215,106,0.08)' },
     infoRow: {
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)',
-        paddingVertical: 8, marginBottom: 8,
+        paddingVertical: spacing.sm, marginBottom: spacing.sm,
     },
     goldInfoRow: { borderBottomColor: 'rgba(255,215,106,0.16)' },
     infoLabel: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-    labelText: { color: '#f4ea26', fontSize: 12, fontWeight: '600', marginLeft: 8, textTransform: 'uppercase' },
-    goldLabelText: { color: '#1a1a1a' },
-    valueText: { color: '#fff', fontSize: 12, fontWeight: '500', flex: 2, textAlign: 'right' },
-    passText: { color: '#f4ea26', fontSize: 14, fontWeight: 'bold', letterSpacing: 1, flex: 2, textAlign: 'right' },
-    goldValueText: { color: '#1a1a1a' },
-    signatureBlock: { alignItems: 'flex-end', paddingHorizontal: 20, paddingBottom: 6, marginTop: 8 },
+    labelText: { color: colors.yellow, fontSize: 12, fontWeight: '600', marginLeft: spacing.sm, textTransform: 'uppercase' },
+    goldLabelText: { color: colors.bgLight },
+    valueText: { color: colors.text, fontSize: 12, fontWeight: '500', flex: 2, textAlign: 'right' },
+    passText: { color: colors.yellow, fontSize: 14, fontWeight: 'bold', letterSpacing: 1, flex: 2, textAlign: 'right' },
+    goldValueText: { color: colors.bgLight },
+    signatureBlock: { alignItems: 'flex-end', paddingHorizontal: spacing.xl, paddingBottom: 6, marginTop: spacing.sm },
     signatureImage: { width: 120, height: 48 },
-    signatureLine: { width: 110, height: 1, backgroundColor: 'rgba(244,234,38,0.5)', marginTop: -2, marginBottom: 4 },
-    goldSignatureLine: { backgroundColor: '#ffd76a' },
+    signatureLine: { width: 110, height: 1, backgroundColor: colors.yellowGlow, marginTop: -2, marginBottom: 4 },
+    goldSignatureLine: { backgroundColor: GOLD.accent },
     signatureLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 8, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1.2 },
-    cardFooter: { padding: 15, alignItems: 'center', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)' },
+    cardFooter: { padding: spacing.lg, alignItems: 'center', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)' },
     goldCardFooter: { borderTopColor: 'rgba(255,215,106,0.28)', backgroundColor: 'rgba(255,215,106,0.08)' },
-    footerLine: { width: 50, height: 2, backgroundColor: '#f4ea26', marginBottom: 8 },
-    footerText: { color: '#fff', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1 },
-    footerSubtext: { color: '#f4ea26', fontSize: 8, marginTop: 2 },
-    goldBorder: { borderColor: '#ffd76a' },
-    goldText: { color: '#1a1a1a' },
-    goldFooterLine: { backgroundColor: '#ffd76a' },
+    footerLine: { width: 50, height: 2, backgroundColor: colors.yellow, marginBottom: spacing.sm },
+    footerText: { color: colors.text, fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1 },
+    footerSubtext: { color: colors.yellow, fontSize: 8, marginTop: 2 },
+    goldBorder: { borderColor: GOLD.accent },
+    goldText: { color: colors.bgLight },
+    goldFooterLine: { backgroundColor: GOLD.accent },
 });
 
 export default PlayerIdCard;

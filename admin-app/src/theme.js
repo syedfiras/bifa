@@ -12,7 +12,7 @@ export const colors = {
   yellowGlow: 'rgba(244,234,38,0.3)',
   text: '#ffffff',
   textSecondary: '#a1a1aa',
-  textMuted: '#666',
+  textMuted: '#6b6b72',
   textDark: '#0c0c0c',
   border: '#2a2a2a',
   borderLight: '#333',
@@ -24,7 +24,7 @@ export const colors = {
   redDim: 'rgba(244,67,54,0.15)',
   blue: '#2196F3',
   blueDim: 'rgba(33,150,243,0.15)',
-  overlay: 'rgba(0,0,0,0.5)',
+  overlay: 'rgba(0,0,0,0.55)',
 };
 
 export const spacing = {
@@ -46,15 +46,21 @@ export const radius = {
 };
 
 export const typography = {
-  hero: { fontSize: 32, fontWeight: '900', letterSpacing: 0.5, color: colors.text },
-  h1: { fontSize: 24, fontWeight: '900', letterSpacing: 0.5, color: colors.text },
-  h2: { fontSize: 20, fontWeight: 'bold', color: colors.text },
-  h3: { fontSize: 18, fontWeight: 'bold', color: colors.text },
+  display: { fontSize: 32, fontWeight: '900', letterSpacing: 0.5, color: colors.text },
+  h1: { fontSize: 22, fontWeight: '900', letterSpacing: 0.3, color: colors.text },
+  h2: { fontSize: 19, fontWeight: '800', letterSpacing: 0.2, color: colors.text },
+  h3: { fontSize: 16, fontWeight: '800', color: colors.text },
   body: { fontSize: 15, fontWeight: '600', color: colors.text },
   caption: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
   small: { fontSize: 11, fontWeight: '700', color: colors.textMuted },
-  label: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase' },
-  button: { fontSize: 15, fontWeight: '900', letterSpacing: 1, color: colors.textDark },
+  label: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  button: { fontSize: 14, fontWeight: '900', letterSpacing: 1, color: colors.textDark },
 };
 
 export const shadows = {
@@ -91,8 +97,14 @@ export const shadows = {
 export const gradients = {
   bg: [colors.bgLight, colors.bg],
   bgDeep: [colors.bgLight, '#050505'],
-  card: [colors.bgCard, colors.bg],
+  card: [colors.bgCard, '#101010'],
   yellowBtn: [colors.yellow, colors.yellowDark],
   redBtn: [colors.red, '#C62828'],
   greenBtn: [colors.green, '#2E7D32'],
+};
+
+export const layout = {
+  screenPadding: 16,
+  cardPadding: 16,
+  maxWidth: 720,
 };

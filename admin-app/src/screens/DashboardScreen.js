@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import Dropdown from '../components/Dropdown';
 import { colors, spacing, radius, typography, shadows, gradients } from '../theme';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
@@ -12,47 +13,15 @@ const POSITION_ORDER = ['Goalkeeper', 'CB', 'LB', 'RB', 'CM', 'CDM', 'CAM', 'LW'
 
 const STATUS_OPTIONS = ['All', 'Pending', 'Accepted'];
 
-const Dropdown = ({ label, options, selected, onSelect }) => {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <TouchableOpacity style={styles.dropdownBtn} onPress={() => setOpen(true)} activeOpacity={0.8}>
-        <Text style={styles.dropdownLabel}>{label}</Text>
-        <View style={styles.dropdownValueWrap}>
-          <Text style={styles.dropdownValue} numberOfLines={1} ellipsizeMode="tail">{selected || 'All'}</Text>
-          <Ionicons name="chevron-down" size={16} color={colors.textMuted} />
-        </View>
-      </TouchableOpacity>
-      <Modal visible={open} transparent animationType="fade">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setOpen(false)}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>{label}</Text>
-            {options.map(option => (
-              <TouchableOpacity
-                key={option}
-                style={[styles.modalOption, selected === option && styles.modalOptionActive]}
-                activeOpacity={0.7}
-                onPress={() => { onSelect(option); setOpen(false); }}
-              >
-                <Text style={[styles.modalOptionText, selected === option && styles.modalOptionTextActive]}>{option}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
-    </>
-  );
-};
-
 const StatCard = ({ icon, label, value, color, delay, sublabel }) => {
   const scale = useRef(new Animated.Value(0)).current;
   const count = useRef(new Animated.Value(0)).current;
   const [displayValue, setDisplayValue] = useState('0');
 
   useEffect(() => {
-    Animated.spring(scale, { toValue: 1, delay, tension: 50, friction: 8, useNativeDriver: true }).start();
+    Animated.spring(scale, { toValue: 1, delay, tension: 60, friction: 10, useNativeDriver: true }).start();
     count.addListener(({ value: v }) => setDisplayValue(Math.round(v).toString()));
-    Animated.timing(count, { toValue: value, duration: 1000, delay: delay + 200, useNativeDriver: false }).start();
+    Animated.timing(count, { toValue: value, duration: 700, delay: delay + 150, useNativeDriver: false }).start();
     return () => count.removeAllListeners();
   }, [value]);
 
@@ -60,7 +29,7 @@ const StatCard = ({ icon, label, value, color, delay, sublabel }) => {
     <Animated.View style={[styles.statCard, { transform: [{ scale }] }]}>
       <LinearGradient colors={gradients.card} style={StyleSheet.absoluteFillObject} />
       <View style={[styles.statIconWrap, { backgroundColor: color + '20' }]}>
-        <Ionicons name={icon} size={22} color={color} />
+        <Ionicons name={icon} size={21} color={color} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.statLabel}>{label}</Text>
@@ -106,7 +75,6 @@ export default function DashboardScreen({ navigation }) {
         axios.get(`${API_URL}/referees`, config),
       ]);
       let players = resPlayers.data.data;
-      // apply dashboard filters client-side
       if (filterPos && filterPos !== 'All') {
         players = players.filter(p => (p.positions || []).includes(filterPos));
       }
@@ -142,11 +110,10 @@ export default function DashboardScreen({ navigation }) {
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => loadData());
-    Animated.timing(headerFade, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+    Animated.timing(headerFade, { toValue: 1, duration: 400, useNativeDriver: true }).start();
     return unsubscribe;
   }, [navigation]);
 
-  // reload when filters change
   useEffect(() => { loadData(); }, [filterPos, filterAge, filterStatus]);
 
   return (
@@ -168,15 +135,16 @@ export default function DashboardScreen({ navigation }) {
 
         <View style={styles.statsSection}>
           <View style={styles.filterRow}>
-            <Dropdown label="Position" options={['All', ...POSITION_ORDER]} selected={filterPos} onSelect={setFilterPos} />
-            <Dropdown label="Category" options={["All", ...AGE_CATEGORIES]} selected={filterAge} onSelect={setFilterAge} />
-            <Dropdown label="Status" options={STATUS_OPTIONS} selected={filterStatus} onSelect={setFilterStatus} />
+            <Dropdown label="Position" options={['All', ...POSITION_ORDER]} selected={filterPos} onSelect={setFilterPos} compact />
+            <Dropdown label="Category" options={["All", ...AGE_CATEGORIES]} selected={filterAge} onSelect={setFilterAge} compact />
+            <Dropdown label="Status" options={STATUS_OPTIONS} selected={filterStatus} onSelect={setFilterStatus} compact />
           </View>
           <StatCard icon="people" label="Total" value={stats.totalPlayers} color={colors.yellow} delay={100} sublabel="registrations" />
           <StatCard icon="time-outline" label="Pending" value={stats.pending} color={colors.orange} delay={200} />
           <StatCard icon="checkmark-circle-outline" label="Accepted" value={stats.accepted} color={colors.green} delay={300} />
           <StatCard icon="gavel-outline" label="Officials" value={stats.referees} color={colors.blue} delay={400} sublabel="referees" />
         </View>
+
         <View style={styles.sectionBlock}>
           <Text style={styles.sectionTitle}>Player distribution</Text>
           <Text style={styles.graphTitle}>By Position</Text>
@@ -234,14 +202,14 @@ export default function DashboardScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: spacing.xl, paddingBottom: spacing.xxxl },
-  header: { marginTop: spacing.lg, marginBottom: spacing.xxl, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  greeting: { color: colors.textSecondary, fontSize: 14, letterSpacing: 1, textTransform: 'uppercase', fontWeight: '600' },
-  heading: { color: colors.text, fontSize: 28, fontWeight: '900', letterSpacing: 0.5, marginTop: spacing.xs },
+  scroll: { padding: spacing.lg, paddingBottom: spacing.xxxl },
+  header: { marginTop: spacing.md, marginBottom: spacing.xl, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  greeting: { ...typography.label, color: colors.textSecondary, letterSpacing: 1 },
+  heading: { ...typography.h1, fontSize: 26, marginTop: spacing.xs },
   headerBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.greenDim, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full },
   headerDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.green, marginRight: spacing.xs },
   headerBadgeText: { color: colors.green, fontSize: 11, fontWeight: '700' },
-  statsSection: { marginBottom: spacing.xxl, gap: spacing.sm },
+  statsSection: { marginBottom: spacing.xl, gap: spacing.sm },
   statCard: {
     flexDirection: 'row', alignItems: 'center', padding: spacing.lg,
     borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
@@ -251,24 +219,21 @@ const styles = StyleSheet.create({
     width: 44, height: 44, borderRadius: radius.md,
     justifyContent: 'center', alignItems: 'center', marginRight: spacing.md,
   },
-  statLabel: { ...typography.label, color: colors.textSecondary, marginBottom: 2 },
+  statLabel: { ...typography.label, marginBottom: 2 },
   statSublabel: { color: colors.textMuted, fontSize: 11, fontWeight: '500' },
   statValue: { fontSize: 22, fontWeight: '900' },
-  sectionTitle: { color: colors.text, fontSize: 18, fontWeight: '800', marginBottom: spacing.md, marginTop: spacing.xs },
+  sectionTitle: { ...typography.h2, marginBottom: spacing.md, marginTop: spacing.xs },
   actionCard: {
     flexDirection: 'row', alignItems: 'center', padding: spacing.lg,
     borderRadius: radius.lg, marginBottom: spacing.md,
     borderWidth: 1, borderColor: colors.border, overflow: 'hidden', ...shadows.md,
   },
-  actionIconWrap: {
-    width: 44, height: 44, borderRadius: radius.md,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  actionTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
-  actionSub: { color: colors.textMuted, fontSize: 12, marginTop: 2, fontWeight: '500' },
+  actionIconWrap: { width: 44, height: 44, borderRadius: radius.md, justifyContent: 'center', alignItems: 'center' },
+  actionTitle: { ...typography.h3 },
+  actionSub: { ...typography.small, marginTop: 2, fontWeight: '500' },
   actionArrow: { marginLeft: spacing.sm },
-  sectionBlock: { marginBottom: spacing.xxl, gap: spacing.sm },
-  graphTitle: { color: colors.textSecondary, fontSize: 14, marginBottom: spacing.sm, fontWeight: '700' },
+  sectionBlock: { marginBottom: spacing.xl, gap: spacing.sm },
+  graphTitle: { ...typography.caption, marginBottom: spacing.sm, fontWeight: '700' },
   graphCard: { backgroundColor: colors.bgCard, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border, ...shadows.md, marginBottom: spacing.lg },
   graphRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
   graphLabel: { color: colors.text, width: 90, fontSize: 13, fontWeight: '600' },
@@ -277,23 +242,4 @@ const styles = StyleSheet.create({
   graphValue: { color: colors.textSecondary, width: 30, textAlign: 'right', fontSize: 12 },
   graphEmpty: { color: colors.textSecondary, textAlign: 'center', paddingVertical: spacing.md },
   filterRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md, alignItems: 'flex-end' },
-  dropdownBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    borderRadius: radius.md,
-    backgroundColor: colors.bgCard,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  dropdownLabel: { color: colors.textSecondary, fontSize: 11, marginBottom: 4, textTransform: 'uppercase', fontWeight: '700' },
-  dropdownValueWrap: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  dropdownValue: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '700' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', padding: spacing.lg },
-  modalCard: { backgroundColor: colors.bg, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border },
-  modalTitle: { color: colors.text, fontSize: 15, fontWeight: '800', marginBottom: spacing.sm },
-  modalOption: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.md, marginBottom: spacing.xs },
-  modalOptionActive: { backgroundColor: colors.yellowDim },
-  modalOptionText: { color: colors.textSecondary, fontSize: 14 },
-  modalOptionTextActive: { color: colors.text, fontWeight: '800' },
 });

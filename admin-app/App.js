@@ -3,8 +3,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ActivityIndicator, View, Animated, TouchableOpacity, Text, StyleSheet, Dimensions } from 'react-native';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { ActivityIndicator, View, Animated, TouchableOpacity, Text, StyleSheet, Dimensions, Modal } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import LoginScreen from './src/screens/LoginScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
@@ -21,58 +21,113 @@ import { colors } from './src/theme';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const TAB_WIDTH = SCREEN_WIDTH / 8;
+const TAB_WIDTH = SCREEN_WIDTH / 5;
 
-const tabs = [
+const PRIMARY_TABS = [
   { name: 'Dashboard', icon: 'home', label: 'Home' },
-  { name: 'Roster', icon: 'users', label: 'Roster' },
+  { name: 'Roster', icon: 'people', label: 'Roster' },
   { name: 'Stats', icon: 'trophy', label: 'Stats' },
-  { name: 'Attendance', icon: 'calendar-check-o', label: 'Attendance' },
-  { name: 'Manage', icon: 'inbox', label: 'Manage' },
-  { name: 'Referees', icon: 'gavel', label: 'Officials' },
-  { name: 'D-License', icon: 'id-card', label: 'D-License' },
-  { name: 'Settings', icon: 'cog', label: 'Settings' },
+  { name: 'Attendance', icon: 'calendar', label: 'Attendance' },
 ];
 
-function CustomTabBar({ state, descriptors, navigation }) {
+const MORE_TABS = [
+  { name: 'Manage', icon: 'file-tray', label: 'Manage' },
+  { name: 'Referees', icon: 'whistle', label: 'Officials' },
+  { name: 'D-License', icon: 'id-card', label: 'D-License' },
+  { name: 'Settings', icon: 'settings', label: 'Settings' },
+];
+
+const MORE_INDEX = PRIMARY_TABS.length;
+
+function CustomTabBar({ state, navigation }) {
   const translateX = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
+  const [moreOpen, setMoreOpen] = useState(false);
+  const isMoreActive = state.index >= MORE_INDEX;
 
   useEffect(() => {
     Animated.spring(translateX, {
-      toValue: state.index * TAB_WIDTH,
+      toValue: Math.min(state.index, MORE_INDEX) * TAB_WIDTH,
       useNativeDriver: true,
       tension: 80,
       friction: 12,
     }).start();
   }, [state.index]);
 
+  const primaryRoutes = state.routes.slice(0, MORE_INDEX);
+
+  const navigateToTab = (routeName) => {
+    setMoreOpen(false);
+    navigation.navigate(routeName);
+  };
+
   return (
-    <View style={[tabStyles.container, { paddingBottom: insets.bottom + 4 }]}>
-      <View style={tabStyles.indicatorContainer}>
-        <Animated.View style={[tabStyles.activeIndicator, { transform: [{ translateX }] }]} />
-      </View>
-      <View style={tabStyles.tabsRow}>
-        {state.routes.map((route, index) => {
-          const isFocused = state.index === index;
-          const tab = tabs[index] || {};
+    <>
+      <View style={[tabStyles.container, { paddingBottom: insets.bottom + 4 }]}>
+        <View style={tabStyles.indicatorContainer}>
+          <Animated.View style={[tabStyles.activeIndicator, { transform: [{ translateX }] }]} />
+        </View>
+        <View style={tabStyles.tabsRow}>
+          {primaryRoutes.map((route, index) => {
+            const isFocused = state.index === index;
+            const tab = PRIMARY_TABS[index] || {};
 
-          const onPress = () => {
-            const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-            if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name);
-          };
+            const onPress = () => {
+              const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+              if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name);
+            };
 
-          return (
-            <TouchableOpacity key={route.key} onPress={onPress} activeOpacity={0.7} style={tabStyles.tab}>
-              <FontAwesome name={tab.icon} size={isFocused ? 20 : 18} color={isFocused ? colors.yellow : colors.textMuted} />
-              <Text style={[tabStyles.tabLabel, isFocused && tabStyles.tabLabelActive]}>
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+            return (
+              <TouchableOpacity key={route.key} onPress={onPress} activeOpacity={0.7} style={tabStyles.tab}>
+                <Ionicons name={tab.icon} size={isFocused ? 21 : 19} color={isFocused ? colors.yellow : colors.textMuted} />
+                <Text style={[tabStyles.tabLabel, isFocused && tabStyles.tabLabelActive]}>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+          <TouchableOpacity onPress={() => setMoreOpen(true)} activeOpacity={0.7} style={tabStyles.tab}>
+            <Ionicons
+              name={isMoreActive ? 'grid' : 'ellipsis-horizontal'}
+              size={isMoreActive ? 20 : 21}
+              color={isMoreActive ? colors.yellow : colors.textMuted}
+            />
+            <Text style={[tabStyles.tabLabel, isMoreActive && tabStyles.tabLabelActive]}>More</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+
+      <Modal visible={moreOpen} transparent animationType="fade">
+        <TouchableOpacity style={tabStyles.moreOverlay} activeOpacity={1} onPress={() => setMoreOpen(false)}>
+          <View style={tabStyles.moreCard}>
+            <View style={tabStyles.moreHeader}>
+              <Text style={tabStyles.moreTitle}>More</Text>
+              <TouchableOpacity onPress={() => setMoreOpen(false)} style={tabStyles.moreClose} activeOpacity={0.7}>
+                <Ionicons name="close" size={16} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <View style={tabStyles.moreGrid}>
+              {MORE_TABS.map(tab => {
+                const isFocused = state.index === state.routes.findIndex(r => r.name === tab.name);
+                return (
+                  <TouchableOpacity
+                    key={tab.name}
+                    style={[tabStyles.moreItem, isFocused && tabStyles.moreItemActive]}
+                    activeOpacity={0.7}
+                    onPress={() => navigateToTab(tab.name)}
+                  >
+                    <View style={[tabStyles.moreIconWrap, isFocused && tabStyles.moreIconWrapActive]}>
+                      <Ionicons name={tab.icon} size={22} color={isFocused ? colors.textDark : colors.yellow} />
+                    </View>
+                    <Text style={[tabStyles.moreItemLabel, isFocused && tabStyles.moreItemLabelActive]}>{tab.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </>
   );
 }
 
@@ -103,7 +158,7 @@ const tabStyles = StyleSheet.create({
     paddingVertical: 6,
   },
   tabLabel: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
     color: colors.textMuted,
     marginTop: 2,
@@ -111,6 +166,66 @@ const tabStyles = StyleSheet.create({
   tabLabelActive: {
     color: colors.yellow,
   },
+  moreOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  moreCard: {
+    backgroundColor: colors.bgLight,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+  },
+  moreHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  moreTitle: { color: colors.text, fontSize: 17, fontWeight: '900' },
+  moreClose: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.bgCard,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  moreGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingTop: 16,
+    gap: 12,
+  },
+  moreItem: {
+    width: '48%',
+    flexGrow: 1,
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: 16,
+    backgroundColor: colors.bgCard,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  moreItemActive: { borderColor: colors.yellow },
+  moreIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.yellowDim,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  moreIconWrapActive: { backgroundColor: colors.yellow },
+  moreItemLabel: { color: colors.textSecondary, fontSize: 13, fontWeight: '800' },
+  moreItemLabelActive: { color: colors.text },
 });
 
 const stackHeader = {

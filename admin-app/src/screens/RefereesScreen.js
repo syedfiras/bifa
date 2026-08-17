@@ -1,52 +1,43 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, TextInput, Animated } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Animated } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
-import { colors, spacing, radius, typography, shadows, gradients } from '../theme';
+import { Ionicons } from '@expo/vector-icons';
+import StatusBadge from '../components/StatusBadge';
+import EmptyState from '../components/EmptyState';
+import FormCard from '../components/FormCard';
+import IconInput from '../components/IconInput';
+import GradientButton from '../components/GradientButton';
+import ScreenHeader from '../components/ScreenHeader';
+import { colors, spacing, radius, shadows, gradients, typography } from '../theme';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
 
-const RefereeCard = ({ item, onEdit, onDelete, isSelected }) => {
-  const scale = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.spring(scale, { toValue: 1, tension: 40, friction: 9, useNativeDriver: true }).start();
-  }, []);
-
-  return (
-    <Animated.View style={{ transform: [{ scale }] }}>
-      <LinearGradient
-        colors={isSelected ? ['#292929', colors.bgLight] : gradients.card}
-        style={[styles.card, isSelected && styles.selectedCard]}
-      >
-        <View style={styles.cardContent}>
-          <View style={styles.avatar}>
-            <FontAwesome5 name="gavel" size={18} color={colors.textDark} />
-          </View>
-          <View style={styles.info}>
-            <Text style={styles.name}>{item.fullName}</Text>
-            <Text style={styles.details}>RIN No. {item.licenseNumber}</Text>
-          </View>
-          <View style={[styles.badge, item.status === 'active' ? styles.bgSuccess : styles.bgWarning]}>
-            <View style={[styles.badgeDot, { backgroundColor: item.status === 'active' ? colors.green : colors.orange }]} />
-            <Text style={styles.badgeText}>{item.status}</Text>
-          </View>
-        </View>
-        <View style={styles.actionsBar}>
-          <TouchableOpacity onPress={() => onEdit(item)} style={styles.editBtn} activeOpacity={0.7}>
-            <Ionicons name="create-outline" size={15} color={colors.yellow} />
-            <Text style={styles.editBtnText}>Edit</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => onDelete(item._id)} style={styles.delBtn} activeOpacity={0.7}>
-            <Ionicons name="trash-outline" size={15} color={colors.red} />
-            <Text style={styles.delBtnText}>Delete</Text>
-          </TouchableOpacity>
-        </View>
-      </LinearGradient>
-    </Animated.View>
-  );
-};
+const RefereeCard = ({ item, onEdit, onDelete, isSelected }) => (
+  <View style={[styles.card, isSelected && styles.selectedCard]}>
+    <View style={styles.cardContent}>
+      <View style={styles.avatar}>
+        <Ionicons name="whistle" size={18} color={colors.yellow} />
+      </View>
+      <View style={styles.info}>
+        <Text style={styles.name} numberOfLines={1}>{item.fullName}</Text>
+        <Text style={styles.details}>RIN No. {item.licenseNumber}</Text>
+      </View>
+      <StatusBadge status={item.status} />
+    </View>
+    <View style={styles.actionsBar}>
+      <TouchableOpacity onPress={() => onEdit(item)} style={styles.editBtn} activeOpacity={0.7}>
+        <Ionicons name="create-outline" size={15} color={colors.yellow} />
+        <Text style={styles.editBtnText}>Edit</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => onDelete(item._id)} style={styles.delBtn} activeOpacity={0.7}>
+        <Ionicons name="trash-outline" size={15} color={colors.red} />
+        <Text style={styles.delBtnText}>Delete</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+);
 
 export default function RefereesScreen({ route, navigation }) {
   const [referees, setReferees] = useState([]);
@@ -94,13 +85,23 @@ export default function RefereesScreen({ route, navigation }) {
   }, [selectedRefereeIdParam, openAddFormParam, prefillRefereeParam]);
 
   useEffect(() => {
-    Animated.timing(formSlide, { toValue: showAdd ? 1 : 0, duration: 300, useNativeDriver: true }).start();
+    Animated.timing(formSlide, { toValue: showAdd ? 1 : 0, duration: 250, useNativeDriver: true }).start();
   }, [showAdd]);
 
   const scrollToReferee = (id, listData = referees) => {
     if (!id || !flatListRef.current || listData.length === 0) return;
     const index = listData.findIndex((item) => item._id === id);
     if (index >= 0) flatListRef.current.scrollToIndex({ index, animated: true, viewPosition: 0.35 });
+  };
+
+  const resetForm = () => {
+    setFormData({ fullName: '', email: '', phone: '', licenseNumber: '' });
+    setEditingId(null);
+  };
+
+  const toggleForm = () => {
+    setShowAdd(prev => !prev);
+    resetForm();
   };
 
   const handleSave = async () => {
@@ -115,8 +116,7 @@ export default function RefereesScreen({ route, navigation }) {
         Alert.alert('Success', 'Referee added');
       }
       setShowAdd(false);
-      setEditingId(null);
-      setFormData({ fullName: '', email: '', phone: '', licenseNumber: '' });
+      resetForm();
       loadReferees();
     } catch (e) {
       Alert.alert('Error', e.response?.data?.message || 'Failed to save');
@@ -146,48 +146,34 @@ export default function RefereesScreen({ route, navigation }) {
 
   const renderHeader = () => (
     <View>
-      <View style={styles.headerRow}>
-        <Text style={styles.heading}>Match Officials</Text>
-        <TouchableOpacity onPress={() => { setShowAdd(!showAdd); setEditingId(null); setFormData({ fullName: '', email: '', phone: '', licenseNumber: '' }); }} activeOpacity={0.8}>
-          <LinearGradient colors={gradients.yellowBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.addBtn}>
-            <Ionicons name={showAdd ? 'close' : 'add'} size={16} color={colors.textDark} />
-            <Text style={styles.addBtnText}>{showAdd ? 'CANCEL' : 'ADD'}</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title="Match Officials"
+        subtitle={`${referees.length} registered official${referees.length === 1 ? '' : 's'}`}
+        action={
+          <GradientButton
+            label={showAdd ? 'CANCEL' : 'ADD'}
+            icon={showAdd ? 'close' : 'add'}
+            onPress={toggleForm}
+            small
+          />
+        }
+      />
 
       {showAdd && (
-        <Animated.View style={[styles.formCard, { opacity: formSlide, transform: [{ translateY: formSlide.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }] }]}>
-          <View style={styles.formHandle} />
-          <Text style={styles.formTitle}>{editingId ? 'Edit Official' : 'Register New Official'}</Text>
-          <View style={styles.formFields}>
-            <View style={styles.inputWrap}>
-              <Ionicons name="person-outline" size={16} color={colors.textMuted} style={styles.inputIcon} />
-              <TextInput style={styles.input} placeholder="Full Name" placeholderTextColor={colors.textMuted} value={formData.fullName} onChangeText={t => setFormData({ ...formData, fullName: t })} />
+        <Animated.View
+          style={{ opacity: formSlide, transform: [{ translateY: formSlide.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }] }}
+        >
+          <FormCard>
+            <Text style={styles.formTitle}>{editingId ? 'Edit Official' : 'Register New Official'}</Text>
+            <View style={styles.formFields}>
+              <IconInput icon="person-outline" placeholder="Full Name" value={formData.fullName} onChangeText={t => setFormData({ ...formData, fullName: t })} />
+              <IconInput icon="mail-outline" placeholder="Email" value={formData.email} onChangeText={t => setFormData({ ...formData, email: t })} />
+              <IconInput icon="call-outline" placeholder="Phone" value={formData.phone} onChangeText={t => setFormData({ ...formData, phone: t })} />
+              <IconInput icon="card-outline" placeholder="RIN Number" value={formData.licenseNumber} onChangeText={t => setFormData({ ...formData, licenseNumber: t })} />
             </View>
-            <View style={styles.inputWrap}>
-              <Ionicons name="mail-outline" size={16} color={colors.textMuted} style={styles.inputIcon} />
-              <TextInput style={styles.input} placeholder="Email" placeholderTextColor={colors.textMuted} value={formData.email} onChangeText={t => setFormData({ ...formData, email: t })} autoCapitalize="none" />
-            </View>
-            <View style={styles.inputWrap}>
-              <Ionicons name="call-outline" size={16} color={colors.textMuted} style={styles.inputIcon} />
-              <TextInput style={styles.input} placeholder="Phone" placeholderTextColor={colors.textMuted} value={formData.phone} onChangeText={t => setFormData({ ...formData, phone: t })} />
-            </View>
-            <View style={styles.inputWrap}>
-              <Ionicons name="card-outline" size={16} color={colors.textMuted} style={styles.inputIcon} />
-              <TextInput style={styles.input} placeholder="RIN Number" placeholderTextColor={colors.textMuted} value={formData.licenseNumber} onChangeText={t => setFormData({ ...formData, licenseNumber: t })} />
-            </View>
-          </View>
-          <TouchableOpacity onPress={handleSave} style={styles.submitBtn} activeOpacity={0.85}>
-            <LinearGradient colors={gradients.yellowBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.submitGrad}>
-              <Text style={styles.submitText}>{editingId ? 'UPDATE' : 'SAVE RECORD'}</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => { setShowAdd(false); setEditingId(null); setFormData({ fullName: '', email: '', phone: '', licenseNumber: '' }); }} style={styles.doneBtn} activeOpacity={0.85}>
-            <LinearGradient colors={['#2e2e2e', colors.bg]} style={styles.doneGrad}>
-              <Text style={styles.doneText}>DONE</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+            <GradientButton label={editingId ? 'UPDATE' : 'SAVE RECORD'} icon="checkmark-done" onPress={handleSave} style={styles.submitBtn} />
+            <GradientButton label="DONE" variant="dark" onPress={() => { setShowAdd(false); resetForm(); }} style={styles.doneBtn} />
+          </FormCard>
         </Animated.View>
       )}
     </View>
@@ -198,7 +184,7 @@ export default function RefereesScreen({ route, navigation }) {
       <LinearGradient colors={gradients.bg} style={StyleSheet.absoluteFillObject} />
 
       {loading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={styles.loadingWrap}>
           <ActivityIndicator size="large" color={colors.yellow} />
         </View>
       ) : (
@@ -216,14 +202,9 @@ export default function RefereesScreen({ route, navigation }) {
           )}
           contentContainerStyle={styles.listContainer}
           ListHeaderComponent={renderHeader}
+          keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <View style={styles.emptyIconWrap}>
-                <FontAwesome5 name="gavel" size={28} color={colors.textMuted} />
-              </View>
-              <Text style={styles.emptyTitle}>No match officials</Text>
-              <Text style={styles.emptySub}>Tap ADD to register one</Text>
-            </View>
+            <EmptyState icon="whistle-outline" title="No match officials" subtitle="Tap ADD to register one" />
           }
           onScrollToIndexFailed={({ index }) => {
             if (referees.length > 0) {
@@ -239,43 +220,25 @@ export default function RefereesScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.xl, borderBottomWidth: 1, borderBottomColor: colors.border },
-  heading: { ...typography.h1, fontSize: 20 },
-  addBtn: { flexDirection: 'row', paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.full, alignItems: 'center', gap: spacing.xs },
-  addBtnText: { color: colors.textDark, fontWeight: 'bold', fontSize: 12 },
-  formCard: { marginHorizontal: spacing.xl, marginTop: spacing.lg, padding: spacing.xl, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgForm, ...shadows.lg },
-  formHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: spacing.lg },
-  formTitle: { color: colors.text, fontSize: 16, fontWeight: '800', marginBottom: spacing.lg },
-  formFields: { gap: spacing.md },
-  inputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgInput, paddingHorizontal: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border },
-  inputIcon: { marginRight: spacing.sm },
-  input: { flex: 1, color: colors.text, paddingVertical: spacing.md, fontSize: 14, fontWeight: '600' },
-  submitBtn: { borderRadius: radius.md, overflow: 'hidden', marginTop: spacing.md },
-  submitGrad: { alignItems: 'center', paddingVertical: spacing.md, borderRadius: radius.md },
-  submitText: { color: colors.textDark, fontWeight: 'bold', letterSpacing: 1 },
-  doneBtn: { borderRadius: radius.md, overflow: 'hidden', marginTop: spacing.sm },
-  doneGrad: { alignItems: 'center', paddingVertical: spacing.md, borderRadius: radius.md },
-  doneText: { color: colors.textSecondary, fontWeight: 'bold', letterSpacing: 1 },
-  listContainer: { paddingTop: spacing.md, paddingHorizontal: spacing.xl, paddingBottom: spacing.xxl },
-  card: { borderRadius: radius.xl, marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', ...shadows.md },
+  loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  listContainer: { paddingTop: spacing.sm, paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
+  card: { borderRadius: radius.lg, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', ...shadows.md },
   selectedCard: { borderColor: colors.yellow, borderWidth: 1.5 },
-  cardContent: { padding: spacing.lg, flexDirection: 'row', alignItems: 'center' },
-  avatar: { width: 46, height: 46, borderRadius: 23, backgroundColor: colors.blue, justifyContent: 'center', alignItems: 'center', marginRight: spacing.md },
+  cardContent: { padding: spacing.lg, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgForm },
+  avatar: { width: 46, height: 46, borderRadius: 23, backgroundColor: colors.yellowDim, justifyContent: 'center', alignItems: 'center', marginRight: spacing.md },
   info: { flex: 1 },
-  name: { color: colors.text, fontSize: 16, fontWeight: '800' },
-  details: { color: colors.textSecondary, fontSize: 12, marginTop: 2 },
-  badge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full, gap: spacing.xs },
-  badgeDot: { width: 5, height: 5, borderRadius: 2.5 },
-  badgeText: { color: colors.text, fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
-  bgSuccess: { backgroundColor: colors.greenDim },
-  bgWarning: { backgroundColor: colors.orangeDim },
-  actionsBar: { flexDirection: 'row', justifyContent: 'flex-end', borderTopWidth: 1, borderTopColor: colors.border, paddingVertical: spacing.md, paddingHorizontal: spacing.lg, backgroundColor: colors.bgCard, gap: spacing.sm },
+  name: { ...typography.body },
+  details: { color: colors.textSecondary, fontSize: 12, marginTop: 2, fontWeight: '600' },
+  actionsBar: {
+    flexDirection: 'row', justifyContent: 'flex-end', borderTopWidth: 1, borderTopColor: colors.border,
+    paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, backgroundColor: colors.bgCard, gap: spacing.sm,
+  },
   editBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs, paddingHorizontal: spacing.md, borderRadius: radius.md, backgroundColor: colors.yellowDim },
   editBtnText: { color: colors.yellow, fontWeight: '700', fontSize: 12 },
   delBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs, paddingHorizontal: spacing.md, borderRadius: radius.md, backgroundColor: colors.redDim },
   delBtnText: { color: colors.red, fontWeight: '700', fontSize: 12 },
-  empty: { alignItems: 'center', marginTop: 60 },
-  emptyIconWrap: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.bgCard, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.lg },
-  emptyTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
-  emptySub: { color: colors.textMuted, fontSize: 13, marginTop: spacing.xs },
+  formTitle: { color: colors.text, fontSize: 16, fontWeight: '800', marginBottom: spacing.lg },
+  formFields: { gap: spacing.md },
+  submitBtn: { marginTop: spacing.md },
+  doneBtn: { marginTop: spacing.sm },
 });

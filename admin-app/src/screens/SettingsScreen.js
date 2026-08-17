@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, radius, typography, shadows, gradients } from '../theme';
+import IconInput from '../components/IconInput';
+import GradientButton from '../components/GradientButton';
+import ScreenHeader from '../components/ScreenHeader';
+import { colors, spacing, radius, shadows, gradients, typography } from '../theme';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
 
@@ -46,107 +49,72 @@ export default function SettingsScreen({ setToken }) {
     <View style={styles.container}>
       <LinearGradient colors={gradients.bg} style={StyleSheet.absoluteFillObject} />
 
-      <View style={styles.header}>
-        <Text style={styles.heading}>Settings</Text>
-        <Text style={styles.sub}>Manage your account</Text>
-      </View>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <ScreenHeader title="Settings" subtitle="Manage your account" />
 
-      {/* App version moved to footer */}
-
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <View style={styles.cardIconWrap}>
-            <Ionicons name="shield-checkmark" size={22} color={colors.yellow} />
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={styles.cardIconWrap}>
+              <Ionicons name="shield-checkmark" size={22} color={colors.yellow} />
+            </View>
+            <View style={{ flex: 1, marginLeft: spacing.md }}>
+              <Text style={styles.cardTitle}>Security</Text>
+              <Text style={styles.cardSub}>Update your login credentials</Text>
+            </View>
           </View>
-          <View style={{ flex: 1, marginLeft: spacing.md }}>
-            <Text style={styles.cardTitle}>Security</Text>
-            <Text style={styles.cardSub}>Update your login credentials</Text>
-          </View>
-        </View>
 
-        <View style={styles.inputWrap}>
-          <Ionicons name="lock-closed-outline" size={17} color={colors.textMuted} style={styles.inputIcon} />
-          <TextInput
-            style={styles.input}
+          <IconInput
+            icon="lock-closed-outline"
             placeholder="Current Password"
-            placeholderTextColor={colors.textMuted}
             secureTextEntry={!showCurrent}
             value={currentPassword}
             onChangeText={setCurrentPassword}
+            rightIcon={showCurrent ? 'eye-off-outline' : 'eye-outline'}
+            onRightPress={() => setShowCurrent(prev => !prev)}
           />
-          <TouchableOpacity onPress={() => setShowCurrent(!showCurrent)} style={styles.eyeBtn}>
-            <Ionicons name={showCurrent ? 'eye-off-outline' : 'eye-outline'} size={18} color={colors.textMuted} />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.inputWrap}>
-          <Ionicons name="lock-open-outline" size={17} color={colors.textMuted} style={styles.inputIcon} />
-          <TextInput
-            style={styles.input}
+          <View style={{ height: spacing.md }} />
+          <IconInput
+            icon="lock-open-outline"
             placeholder="New Password"
-            placeholderTextColor={colors.textMuted}
             secureTextEntry={!showNew}
             value={newPassword}
             onChangeText={setNewPassword}
+            rightIcon={showNew ? 'eye-off-outline' : 'eye-outline'}
+            onRightPress={() => setShowNew(prev => !prev)}
           />
-          <TouchableOpacity onPress={() => setShowNew(!showNew)} style={styles.eyeBtn}>
-            <Ionicons name={showNew ? 'eye-off-outline' : 'eye-outline'} size={18} color={colors.textMuted} />
-          </TouchableOpacity>
+
+          <GradientButton label="Update Password" icon="lock-closed" onPress={handleChangePassword} style={styles.updateBtn} />
         </View>
 
-        <TouchableOpacity onPress={handleChangePassword} activeOpacity={0.8}>
-          <LinearGradient colors={gradients.yellowBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.btn}>
-            <Ionicons name="lock-closed" size={16} color={colors.textDark} style={{ marginRight: spacing.sm }} />
-            <Text style={styles.btnText}>Update Password</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
+        <View style={styles.dangerSection}>
+          <GradientButton label="Sign Out" icon="log-out-outline" variant="red" onPress={handleLogout} />
+        </View>
 
-      <View style={styles.dangerSection}>
-        <TouchableOpacity onPress={handleLogout} activeOpacity={0.8}>
-          <LinearGradient colors={gradients.redBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.logoutBtn}>
-            <Ionicons name="log-out-outline" size={20} color={colors.text} style={{ marginRight: spacing.sm }} />
-            <Text style={styles.logoutText}>Sign Out</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.versionFooter}>
-        <View style={styles.versionRowInner}>
+        <View style={styles.versionFooter}>
           <Text style={styles.versionLabel}>App Version</Text>
-          <Text style={styles.versionValue}>2.2</Text>
+          <Text style={styles.versionValue}>3.0.0</Text>
+          <Text style={styles.createdBy}>Developed by Syed Firas</Text>
         </View>
-        <Text style={styles.createdBy}>Developed by Syed Firas</Text>
-      </View>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { padding: spacing.xl, paddingTop: spacing.xxxl },
-  heading: { ...typography.h1, fontSize: 26 },
-  sub: { color: colors.textSecondary, fontSize: 13, marginTop: spacing.xs },
-  card: { backgroundColor: colors.bgLight, padding: spacing.xl, borderRadius: radius.lg, marginHorizontal: spacing.xl, borderWidth: 1, borderColor: colors.border, ...shadows.md },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xl },
-  cardIconWrap: { width: 42, height: 42, borderRadius: radius.md, backgroundColor: colors.yellowDim, justifyContent: 'center', alignItems: 'center' },
-  cardTitle: { color: colors.text, fontSize: 17, fontWeight: '700' },
-  cardSub: { color: colors.textSecondary, fontSize: 12, marginTop: 2 },
-  inputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgInput, paddingHorizontal: spacing.md, borderRadius: radius.md, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border },
-  inputIcon: { marginRight: spacing.sm },
-  input: { flex: 1, color: colors.text, paddingVertical: spacing.md, fontSize: 14, fontWeight: '600' },
-  eyeBtn: { padding: spacing.xs },
-  btn: { flexDirection: 'row', padding: spacing.md, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', marginTop: spacing.sm, ...shadows.yellow },
-  btnText: { ...typography.button, color: colors.textDark },
-  dangerSection: { paddingHorizontal: spacing.xl, marginTop: spacing.xxl },
-  logoutBtn: {
-    flexDirection: 'row', padding: spacing.lg, borderRadius: radius.md,
-    alignItems: 'center', justifyContent: 'center', ...shadows.md,
+  scroll: { padding: spacing.lg, paddingBottom: spacing.xxxl },
+  card: {
+    backgroundColor: colors.bgLight, padding: spacing.lg, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.border, ...shadows.md, marginTop: spacing.md,
   },
-  logoutText: { color: colors.text, fontWeight: 'bold', fontSize: 15, letterSpacing: 1 },
-  versionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.xl, marginTop: spacing.md, marginBottom: spacing.sm },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.lg },
+  cardIconWrap: { width: 42, height: 42, borderRadius: radius.md, backgroundColor: colors.yellowDim, justifyContent: 'center', alignItems: 'center' },
+  cardTitle: { ...typography.h3 },
+  cardSub: { color: colors.textSecondary, fontSize: 12, marginTop: 2, fontWeight: '600' },
+  updateBtn: { marginTop: spacing.lg },
+  dangerSection: { marginTop: spacing.xxl },
+  versionFooter: { alignItems: 'center', marginTop: spacing.xxl },
   versionLabel: { color: colors.textSecondary, fontSize: 13, fontWeight: '700' },
-  versionValue: { color: colors.text, fontSize: 13, fontWeight: '900' },
-  versionFooter: { position: 'absolute', left: 0, right: 0, bottom: spacing.lg, alignItems: 'center' },
-  versionRowInner: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  versionValue: { color: colors.text, fontSize: 13, fontWeight: '900', marginTop: 2 },
   createdBy: { color: colors.textSecondary, fontSize: 12, marginTop: spacing.xs },
 });

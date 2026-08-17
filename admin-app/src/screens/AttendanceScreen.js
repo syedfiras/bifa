@@ -1,9 +1,11 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Animated, Alert, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Alert, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import EmptyState from '../components/EmptyState';
+import GradientButton from '../components/GradientButton';
 import { colors, spacing, radius, shadows, gradients, typography } from '../theme';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
@@ -19,44 +21,38 @@ const formatDisplayDate = (date) =>
   date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
 const AttendanceRow = ({ item, onChange }) => {
-  const scale = useRef(new Animated.Value(0)).current;
   const isPresent = item.attendance === 'present';
-  useEffect(() => {
-    Animated.spring(scale, { toValue: 1, tension: 40, friction: 9, useNativeDriver: true }).start();
-  }, []);
 
   return (
-    <Animated.View style={{ transform: [{ scale }] }}>
-      <LinearGradient colors={gradients.card} style={[styles.row, isPresent && styles.rowPresent]}>
-        {item.profilePhoto ? (
-          <Image source={{ uri: item.profilePhoto }} style={styles.avatar} />
-        ) : (
-          <View style={[styles.avatar, styles.avatarPlaceholder]}>
-            <Ionicons name="person" size={20} color={colors.yellow} />
-          </View>
-        )}
-        <View style={styles.info}>
-          <Text style={styles.name} numberOfLines={1}>{item.fullName}</Text>
-          <Text style={styles.details}>
-            {(item.positions || []).join(', ')} <Text style={{ color: colors.yellow }}>•</Text> {item.ageCategory || 'U20'}
-          </Text>
+    <LinearGradient colors={gradients.card} style={[styles.row, isPresent && styles.rowPresent]}>
+      {item.profilePhoto ? (
+        <Image source={{ uri: item.profilePhoto }} style={styles.avatar} />
+      ) : (
+        <View style={[styles.avatar, styles.avatarPlaceholder]}>
+          <Ionicons name="person" size={20} color={colors.yellow} />
         </View>
-        <TouchableOpacity
-          style={[styles.statusChip, isPresent && styles.statusChipPresentActive]}
-          activeOpacity={0.8}
-          onPress={() => onChange(item._id)}
-        >
-          <Ionicons
-            name={isPresent ? 'checkmark-circle' : 'add-circle-outline'}
-            size={17}
-            color={isPresent ? colors.textDark : colors.green}
-          />
-          <Text style={[styles.statusChipText, isPresent && styles.statusChipTextActive]}>
-            {isPresent ? 'Present' : 'Mark Present'}
-          </Text>
-        </TouchableOpacity>
-      </LinearGradient>
-    </Animated.View>
+      )}
+      <View style={styles.info}>
+        <Text style={styles.name} numberOfLines={1}>{item.fullName}</Text>
+        <Text style={styles.details}>
+          {(item.positions || []).join(', ')} <Text style={{ color: colors.yellow }}>•</Text> {item.ageCategory || 'U20'}
+        </Text>
+      </View>
+      <TouchableOpacity
+        style={[styles.statusChip, isPresent && styles.statusChipPresentActive]}
+        activeOpacity={0.8}
+        onPress={() => onChange(item._id)}
+      >
+        <Ionicons
+          name={isPresent ? 'checkmark-circle' : 'add-circle-outline'}
+          size={17}
+          color={isPresent ? colors.textDark : colors.green}
+        />
+        <Text style={[styles.statusChipText, isPresent && styles.statusChipTextActive]}>
+          {isPresent ? 'Present' : 'Mark Present'}
+        </Text>
+      </TouchableOpacity>
+    </LinearGradient>
   );
 };
 
@@ -208,23 +204,7 @@ export default function AttendanceScreen({ navigation }) {
               {isSaved ? 'Attendance saved for this date' : `${presentCount} player${presentCount === 1 ? '' : 's'} present`}
             </Text>
           </View>
-          <TouchableOpacity
-            onPress={saveAttendance}
-            disabled={saving}
-            activeOpacity={0.8}
-            style={[styles.saveBtnWrap, saving && styles.saveBtnDisabled]}
-          >
-            <LinearGradient colors={gradients.yellowBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.saveBtn}>
-              {saving ? (
-                <ActivityIndicator size="small" color={colors.textDark} />
-              ) : (
-                <>
-                  <Ionicons name="checkmark-done" size={16} color={colors.textDark} />
-                  <Text style={styles.saveBtnText}>SAVE</Text>
-                </>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
+          <GradientButton label="SAVE" icon="checkmark-done" onPress={saveAttendance} loading={saving} small />
         </View>
 
         {loading ? (
@@ -234,21 +214,13 @@ export default function AttendanceScreen({ navigation }) {
         ) : (
           <View style={styles.list}>
             {players.length === 0 ? (
-              <View style={styles.empty}>
-                <View style={styles.emptyIconWrap}>
-                  <Ionicons name="calendar-outline" size={32} color={colors.textMuted} />
-                </View>
-                <Text style={styles.emptyTitle}>No accepted players</Text>
-                <Text style={styles.emptySub}>Approve players from the Manage tab first</Text>
-              </View>
+              <EmptyState icon="calendar-outline" title="No accepted players" subtitle="Approve players from the Manage tab first" />
             ) : visiblePlayers.length === 0 ? (
-              <View style={styles.empty}>
-                <View style={styles.emptyIconWrap}>
-                  <Ionicons name="checkmark-done-outline" size={32} color={colors.textMuted} />
-                </View>
-                <Text style={styles.emptyTitle}>{normalizedSearch ? 'No players found' : 'No players marked present'}</Text>
-                <Text style={styles.emptySub}>{normalizedSearch ? 'Try a different search' : 'Search a player above and tap Mark Present'}</Text>
-              </View>
+              <EmptyState
+                icon={normalizedSearch ? 'search-outline' : 'checkmark-done-outline'}
+                title={normalizedSearch ? 'No players found' : 'No players marked present'}
+                subtitle={normalizedSearch ? 'Try a different search' : 'Search a player above and tap Mark Present'}
+              />
             ) : visiblePlayers.map(item => (
               <AttendanceRow key={item._id} item={item} onChange={changeStatus} />
             ))}
@@ -279,7 +251,7 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '600', paddingVertical: 0, marginLeft: spacing.sm },
   clearBtn: { padding: spacing.xs },
   dateCenter: { flex: 1, alignItems: 'center' },
-  dateLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  dateLabel: { ...typography.label, color: colors.textMuted, letterSpacing: 0.5 },
   dateValue: { color: colors.text, fontSize: 15, fontWeight: '800', marginTop: spacing.xs },
   todayBtn: {
     marginTop: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: 6,
@@ -296,15 +268,8 @@ const styles = StyleSheet.create({
   summaryValue: { color: colors.text, fontSize: 18, fontWeight: '900', marginTop: 2 },
   summaryLabel: { color: colors.textMuted, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 2 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
-  heading: { ...typography.h1, fontSize: 20 },
-  subHeading: { color: colors.textMuted, fontSize: 12, marginTop: 2, fontWeight: '600' },
-  saveBtnWrap: { borderRadius: radius.full },
-  saveBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
-    paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.full,
-  },
-  saveBtnDisabled: { opacity: 0.6 },
-  saveBtnText: { color: colors.textDark, fontWeight: 'bold', fontSize: 12 },
+  heading: { ...typography.h2 },
+  subHeading: { ...typography.small, marginTop: 2, fontWeight: '600' },
   loadingWrap: { paddingVertical: 80, alignItems: 'center' },
   list: { gap: spacing.sm },
   row: {
@@ -325,8 +290,4 @@ const styles = StyleSheet.create({
   statusChipPresentActive: { backgroundColor: colors.greenDim, borderColor: colors.green },
   statusChipText: { color: colors.textSecondary, fontSize: 11, fontWeight: '800' },
   statusChipTextActive: { color: colors.text },
-  empty: { alignItems: 'center', marginTop: 60 },
-  emptyIconWrap: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.bgCard, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.lg },
-  emptyTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
-  emptySub: { color: colors.textMuted, fontSize: 13, marginTop: spacing.xs, textAlign: 'center' },
 });

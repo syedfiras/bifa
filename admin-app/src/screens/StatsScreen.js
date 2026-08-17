@@ -1,9 +1,13 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Image, TextInput, Animated, Modal, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Image, TextInput, Modal, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import Dropdown from '../components/Dropdown';
+import EmptyState from '../components/EmptyState';
+import StatTile from '../components/StatTile';
+import ScreenHeader from '../components/ScreenHeader';
 import { colors, spacing, radius, shadows, gradients, typography } from '../theme';
 
 const AGE_CATEGORIES = ['U13', 'U15', 'U17', 'U19', 'U20', 'SENIOR'];
@@ -12,109 +16,60 @@ const DEF_GK_POSITIONS = ['Goalkeeper', 'CB', 'LB', 'RB'];
 const VIEW_OPTIONS = ['All Players', 'Defenders & GK'];
 const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
 
-const Dropdown = ({ label, options, selected, onSelect }) => {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <TouchableOpacity style={styles.dropdownBtn} onPress={() => setOpen(true)} activeOpacity={0.8}>
-        <Text style={styles.dropdownLabel}>{label}</Text>
-        <View style={styles.dropdownValueWrap}>
-          <Text style={styles.dropdownValue} numberOfLines={1} ellipsizeMode="tail">{selected || 'All'}</Text>
-          <Ionicons name="chevron-down" size={18} color={colors.textMuted} />
-        </View>
-      </TouchableOpacity>
-      <Modal visible={open} transparent animationType="fade">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setOpen(false)}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>{label}</Text>
-            {options.map(option => (
-              <TouchableOpacity
-                key={option}
-                style={[styles.modalOption, selected === option && styles.modalOptionActive]}
-                activeOpacity={0.7}
-                onPress={() => {
-                  onSelect(option);
-                  setOpen(false);
-                }}
-              >
-                <Text style={[styles.modalOptionText, selected === option && styles.modalOptionTextActive]}>{option}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
-    </>
-  );
-};
-
-const StatTile = ({ icon, value, label }) => (
-  <View style={styles.statTile}>
-    <Ionicons name={icon} size={15} color={colors.yellow} />
-    <Text style={styles.statValue}>{value}</Text>
-    <Text style={styles.statLabel}>{label}</Text>
-  </View>
-);
-
 const StatsCard = ({ item, onPress, onEdit }) => {
-  const scale = useRef(new Animated.Value(0)).current;
   const isGK = (item.positions || []).includes('Goalkeeper');
   const isDefender = (item.positions || []).some(pos => ['CB', 'LB', 'RB'].includes(pos));
-  useEffect(() => {
-    Animated.spring(scale, { toValue: 1, tension: 40, friction: 9, useNativeDriver: true }).start();
-  }, []);
 
   return (
-    <Animated.View style={{ transform: [{ scale }] }}>
-      <TouchableOpacity activeOpacity={0.75} onPress={onPress}>
-        <LinearGradient colors={gradients.card} style={styles.card}>
-          <View style={styles.cardHeader}>
-            {item.profilePhoto ? (
-              <Image source={{ uri: item.profilePhoto }} style={styles.avatar} />
-            ) : (
-              <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                <Ionicons name="person" size={20} color={colors.yellow} />
-              </View>
-            )}
-            <View style={styles.info}>
-              <Text style={styles.name} numberOfLines={1}>{item.fullName}</Text>
-              <Text style={styles.details}>
-                {(item.positions || []).join(', ')} <Text style={{ color: colors.yellow }}>•</Text> {item.ageCategory || 'U20'}
-              </Text>
-            </View>
-            <TouchableOpacity onPress={onEdit} activeOpacity={0.7} style={styles.cardEditBtn}>
-              <Ionicons name="pencil" size={14} color={colors.textDark} />
-            </TouchableOpacity>
-          </View>
-          {isGK ? (
-            <View style={styles.statsRow}>
-              <StatTile icon="calendar" value={item.matchesPlayed ?? 0} label="Matches" />
-              <View style={styles.statDivider} />
-              <StatTile icon="shield-outline" value={item.goalsConceded ?? 0} label="Conceded" />
-              <View style={styles.statDivider} />
-              <StatTile icon="sparkles" value={item.cleanSheets ?? 0} label="Clean" />
-            </View>
-          ) : isDefender ? (
-            <View style={styles.statsRow}>
-              <StatTile icon="calendar" value={item.matchesPlayed ?? 0} label="Matches" />
-              <View style={styles.statDivider} />
-              <StatTile icon="football" value={item.goals ?? 0} label="Goals" />
-              <View style={styles.statDivider} />
-              <StatTile icon="hand-left" value={item.assists ?? 0} label="Assists" />
-              <View style={styles.statDivider} />
-              <StatTile icon="shield-outline" value={item.goalsConceded ?? 0} label="Conceded" />
-            </View>
+    <TouchableOpacity activeOpacity={0.75} onPress={onPress}>
+      <LinearGradient colors={gradients.card} style={styles.card}>
+        <View style={styles.cardHeader}>
+          {item.profilePhoto ? (
+            <Image source={{ uri: item.profilePhoto }} style={styles.avatar} />
           ) : (
-            <View style={styles.statsRow}>
-              <StatTile icon="calendar" value={item.matchesPlayed ?? 0} label="Matches" />
-              <View style={styles.statDivider} />
-              <StatTile icon="football" value={item.goals ?? 0} label="Goals" />
-              <View style={styles.statDivider} />
-              <StatTile icon="hand-left" value={item.assists ?? 0} label="Assists" />
+            <View style={[styles.avatar, styles.avatarPlaceholder]}>
+              <Ionicons name="person" size={20} color={colors.yellow} />
             </View>
           )}
-        </LinearGradient>
-      </TouchableOpacity>
-    </Animated.View>
+          <View style={styles.info}>
+            <Text style={styles.name} numberOfLines={1}>{item.fullName}</Text>
+            <Text style={styles.details}>
+              {(item.positions || []).join(', ')} <Text style={{ color: colors.yellow }}>•</Text> {item.ageCategory || 'U20'}
+            </Text>
+          </View>
+          <TouchableOpacity onPress={onEdit} activeOpacity={0.7} style={styles.cardEditBtn}>
+            <Ionicons name="pencil" size={14} color={colors.textDark} />
+          </TouchableOpacity>
+        </View>
+        {isGK ? (
+          <View style={styles.statsRow}>
+            <StatTile icon="calendar" value={item.matchesPlayed ?? 0} label="Matches" />
+            <View style={styles.statDivider} />
+            <StatTile icon="shield-outline" value={item.goalsConceded ?? 0} label="Conceded" />
+            <View style={styles.statDivider} />
+            <StatTile icon="sparkles" value={item.cleanSheets ?? 0} label="Clean" />
+          </View>
+        ) : isDefender ? (
+          <View style={styles.statsRow}>
+            <StatTile icon="calendar" value={item.matchesPlayed ?? 0} label="Matches" />
+            <View style={styles.statDivider} />
+            <StatTile icon="football" value={item.goals ?? 0} label="Goals" />
+            <View style={styles.statDivider} />
+            <StatTile icon="hand-left" value={item.assists ?? 0} label="Assists" />
+            <View style={styles.statDivider} />
+            <StatTile icon="shield-outline" value={item.goalsConceded ?? 0} label="Conceded" />
+          </View>
+        ) : (
+          <View style={styles.statsRow}>
+            <StatTile icon="calendar" value={item.matchesPlayed ?? 0} label="Matches" />
+            <View style={styles.statDivider} />
+            <StatTile icon="football" value={item.goals ?? 0} label="Goals" />
+            <View style={styles.statDivider} />
+            <StatTile icon="hand-left" value={item.assists ?? 0} label="Assists" />
+          </View>
+        )}
+      </LinearGradient>
+    </TouchableOpacity>
   );
 };
 
@@ -298,7 +253,7 @@ export default function StatsScreen({ navigation }) {
       </View>
 
       <View style={styles.headerRow}>
-        <Text style={styles.heading}>Player Stats</Text>
+        <ScreenHeader title="Player Stats" subtitle={view === VIEW_OPTIONS[1] ? 'Defenders & goalkeepers' : 'Season performance'} />
         <TouchableOpacity onPress={openPicker} activeOpacity={0.8}>
           <LinearGradient colors={gradients.yellowBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.addBtn}>
             <Ionicons name="add" size={16} color={colors.textDark} />
@@ -316,19 +271,13 @@ export default function StatsScreen({ navigation }) {
           data={sortedPlayers}
           keyExtractor={item => item._id}
           renderItem={({ item }) => (
-            <StatsCard item={item} onPress={() => navigation.navigate('PlayerDetail', { id: item._id })} onEdit={() => openEditStats(item)} />
+            <StatsCard item={item} onPress={() => navigation.navigate('PlayerDetail', { id: item._id, fromStats: true })} onEdit={() => openEditStats(item)} />
           )}
           contentContainerStyle={styles.list}
           refreshing={refreshing}
           onRefresh={() => { setRefreshing(true); loadPlayers(true); }}
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <View style={styles.emptyIconWrap}>
-                <Ionicons name="bar-chart-outline" size={32} color={colors.textMuted} />
-              </View>
-              <Text style={styles.emptyTitle}>No players in stats</Text>
-              <Text style={styles.emptySub}>Tap ADD to select players from the roster</Text>
-            </View>
+            <EmptyState icon="bar-chart-outline" title="No players in stats" subtitle="Tap ADD to select players from the roster" />
           }
         />
       )}
@@ -361,11 +310,7 @@ export default function StatsScreen({ navigation }) {
                 <ActivityIndicator size="large" color={colors.yellow} />
               </View>
             ) : filteredCandidates.length === 0 ? (
-              <View style={styles.pickerEmpty}>
-                <Ionicons name="checkmark-done-circle-outline" size={32} color={colors.textMuted} />
-                <Text style={styles.pickerEmptyTitle}>All roster players already in stats</Text>
-                <Text style={styles.pickerEmptySub}>No remaining players to add</Text>
-              </View>
+              <EmptyState icon="checkmark-done-circle-outline" title="All roster players already in stats" subtitle="No remaining players to add" />
             ) : (
               <FlatList
                 data={filteredCandidates}
@@ -473,18 +418,6 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '600', paddingVertical: 0, marginLeft: spacing.sm },
   clearBtn: { padding: spacing.xs },
   dropdownRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, gap: spacing.sm, marginBottom: spacing.sm },
-  dropdownBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: radius.full,
-    backgroundColor: colors.bgCard,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  dropdownLabel: { color: colors.textSecondary, fontSize: 11, marginBottom: 4, textTransform: 'uppercase', fontWeight: '700' },
-  dropdownValueWrap: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  dropdownValue: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '700' },
   viewToggle: {
     flexDirection: 'row', marginHorizontal: spacing.lg, marginBottom: spacing.md,
     backgroundColor: colors.bgCard, borderRadius: radius.full, padding: 3,
@@ -494,15 +427,7 @@ const styles = StyleSheet.create({
   viewToggleBtnActive: { backgroundColor: colors.yellow },
   viewToggleText: { color: colors.textSecondary, fontSize: 12, fontWeight: '800' },
   viewToggleTextActive: { color: colors.textDark },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', padding: spacing.lg },
-  modalCard: { backgroundColor: colors.bg, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border },
-  modalTitle: { color: colors.text, fontSize: 15, fontWeight: '800', marginBottom: spacing.sm },
-  modalOption: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.md, marginBottom: spacing.xs },
-  modalOptionActive: { backgroundColor: colors.yellowDim },
-  modalOptionText: { color: colors.textSecondary, fontSize: 14 },
-  modalOptionTextActive: { color: colors.text, fontWeight: '800' },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, marginBottom: spacing.md },
-  heading: { ...typography.h1, fontSize: 20 },
   addBtn: { flexDirection: 'row', paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.full, alignItems: 'center', gap: spacing.xs },
   addBtnText: { color: colors.textDark, fontWeight: 'bold', fontSize: 12 },
   loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -515,21 +440,18 @@ const styles = StyleSheet.create({
   name: { color: colors.text, fontSize: 15, fontWeight: '700' },
   details: { color: colors.textSecondary, fontSize: 12, marginTop: 2, fontWeight: '600' },
   statsRow: { flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.bgCard },
-  statTile: { flex: 1, alignItems: 'center', paddingVertical: spacing.md },
-  statValue: { color: colors.text, fontSize: 18, fontWeight: '900', marginTop: 2 },
-  statLabel: { color: colors.textSecondary, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 2 },
   statDivider: { width: 1, height: 30, backgroundColor: colors.border },
-  empty: { alignItems: 'center', marginTop: 60 },
-  emptyIconWrap: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.bgCard, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.lg },
-  emptyTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
-  emptySub: { color: colors.textMuted, fontSize: 13, marginTop: spacing.xs, textAlign: 'center' },
+  cardEditBtn: {
+    width: 28, height: 28, borderRadius: 14, backgroundColor: colors.yellow,
+    justifyContent: 'center', alignItems: 'center', marginLeft: spacing.sm,
+  },
   pickerOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
   pickerCard: {
     backgroundColor: colors.bgLight, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
     borderWidth: 1, borderColor: colors.border, maxHeight: '75%', ...shadows.lg,
   },
   pickerHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border },
-  pickerTitle: { color: colors.text, fontSize: 17, fontWeight: '900' },
+  pickerTitle: { ...typography.h3 },
   pickerClose: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.bgCard, justifyContent: 'center', alignItems: 'center' },
   pickerSearchContainer: {
     flexDirection: 'row', alignItems: 'center', margin: spacing.lg, marginBottom: spacing.sm,
@@ -538,9 +460,6 @@ const styles = StyleSheet.create({
   },
   pickerSearchInput: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '600', paddingVertical: 0, marginLeft: spacing.sm },
   pickerLoading: { paddingVertical: 60, alignItems: 'center' },
-  pickerEmpty: { alignItems: 'center', paddingVertical: 50 },
-  pickerEmptyTitle: { color: colors.text, fontSize: 15, fontWeight: '700', marginTop: spacing.md },
-  pickerEmptySub: { color: colors.textMuted, fontSize: 13, marginTop: spacing.xs },
   pickerList: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
   pickerRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
   pickerAvatar: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: colors.yellow, marginRight: spacing.md },
@@ -548,11 +467,9 @@ const styles = StyleSheet.create({
   pickerName: { color: colors.text, fontSize: 15, fontWeight: '700' },
   pickerDetails: { color: colors.textSecondary, fontSize: 12, marginTop: 2, fontWeight: '600' },
   pickerAddBadge: { width: 26, height: 26, borderRadius: 13, backgroundColor: colors.yellow, justifyContent: 'center', alignItems: 'center' },
-  cardEditBtn: {
-    width: 28, height: 28, borderRadius: 14, backgroundColor: colors.yellow,
-    justifyContent: 'center', alignItems: 'center', marginLeft: spacing.sm,
-  },
+  modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', padding: spacing.lg },
   editModalCard: { backgroundColor: colors.bgLight, borderRadius: radius.lg, padding: spacing.xl, borderWidth: 1, borderColor: colors.border, ...shadows.lg },
+  modalTitle: { ...typography.h3 },
   modalSubtitle: { color: colors.textSecondary, fontSize: 13, marginTop: 2, marginBottom: spacing.lg },
   modalFieldRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md },
   modalFieldLabel: { flex: 1, color: colors.textSecondary, fontSize: 14, fontWeight: '700', marginLeft: spacing.md },
