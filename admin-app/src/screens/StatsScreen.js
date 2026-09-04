@@ -253,8 +253,10 @@ export default function StatsScreen({ navigation }) {
       </View>
 
       <View style={styles.headerRow}>
-        <ScreenHeader title="Player Stats" subtitle={view === VIEW_OPTIONS[1] ? 'Defenders & goalkeepers' : 'Season performance'} />
-        <TouchableOpacity onPress={openPicker} activeOpacity={0.8}>
+        <View style={styles.headerTitleWrap}>
+          <ScreenHeader title="Player Stats" subtitle={view === VIEW_OPTIONS[1] ? 'Defenders & goalkeepers' : 'Season performance'} />
+        </View>
+        <TouchableOpacity onPress={openPicker} activeOpacity={0.8} style={styles.addBtnWrap}>
           <LinearGradient colors={gradients.yellowBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.addBtn}>
             <Ionicons name="add" size={16} color={colors.textDark} />
             <Text style={styles.addBtnText}>ADD</Text>
@@ -427,8 +429,10 @@ const styles = StyleSheet.create({
   viewToggleBtnActive: { backgroundColor: colors.yellow },
   viewToggleText: { color: colors.textSecondary, fontSize: 12, fontWeight: '800' },
   viewToggleTextActive: { color: colors.textDark },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, marginBottom: spacing.md },
-  addBtn: { flexDirection: 'row', paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.full, alignItems: 'center', gap: spacing.xs },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, marginBottom: spacing.md, gap: spacing.sm },
+  headerTitleWrap: { flex: 1, flexShrink: 1, minWidth: 0, marginRight: spacing.xs },
+  addBtnWrap: { flexShrink: 0 },
+  addBtn: { flexDirection: 'row', paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.full, alignItems: 'center', gap: spacing.xs, flexShrink: 0 },
   addBtnText: { color: colors.textDark, fontWeight: 'bold', fontSize: 12 },
   loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },

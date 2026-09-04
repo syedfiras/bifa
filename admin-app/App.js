@@ -99,7 +99,7 @@ function CustomTabBar({ state, navigation }) {
 
       <Modal visible={moreOpen} transparent animationType="fade">
         <TouchableOpacity style={tabStyles.moreOverlay} activeOpacity={1} onPress={() => setMoreOpen(false)}>
-          <View style={tabStyles.moreCard}>
+          <View style={[tabStyles.moreCard, { paddingBottom: insets.bottom + 24 }]}>
             <View style={tabStyles.moreHeader}>
               <Text style={tabStyles.moreTitle}>More</Text>
               <TouchableOpacity onPress={() => setMoreOpen(false)} style={tabStyles.moreClose} activeOpacity={0.7}>
